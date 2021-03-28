@@ -390,7 +390,8 @@ class Mine(search.Problem):
         '''
         # convert to np.array in order to use tuple addressing
         # state[loc]   where loc is a tuple
-        return self.cumsum_mine
+
+        return sum(state & self.underground)
     #end
 
     def is_dangerous(self, state):
@@ -406,6 +407,19 @@ class Mine(search.Problem):
     #end
 
     def back2D(self, actions, state):
+        """
+        Converts 3D locations and arrays, as converted in the Mine.init, back to 2D.
+
+        Parameters
+        ----------
+        actions
+        state
+
+        Returns
+        -------
+        actions, state
+        """
+
         if self.flag2D:
             for i, a in enumerate(np.array(actions)):
                 actions[i] = tuple(a[[0, 2]])
@@ -419,18 +433,49 @@ class Mine(search.Problem):
     # ========================  Class Mine  ==================================
 
 def getParentsSum(mine, state, loc, seenLocs):
-    path = []
-    output = mine.underground[loc]
-    z = loc[2]-1
+    '''
+      Gets the specified cell value, specified by loc, incorporating the cells values required to get to "loc".
 
-    prevCalcCoords = (loc[0], loc[1], loc[2] - 1)
+      Function works with a pattern that was noticed, further details in report. Briefly, To calculate any cell, the
+       cell directly above loc, with the simplified mine value, can be added with cell values dig tolerance above the loc.
+       Which produces an upside down pyramid shape, with the point being on the loc location.
 
+       E.g. dig_tolerence = 1, len_x = 3, len_y = 1, len_z = 3 , loc = (1,0,2)
+
+       getParentsSum(loc=(1,0,1)) + mine.underground[(0,0,0)] + mine.underground[(0,0,2)]
+
+       Therefore if loc(1,0,1) is saved in dictionary with its values and path, the recursive search for
+       its values can be skipped.
+
+
+      Parameters
+      ----------
+      mine : a Mine instance
+      state : a partially dug mine
+      loc : a 3d tuple (x,y,z), to a location in the mine.
+      seenLocs : a dictionary with keys as loc coordinates. Stores the sum and path for locs previosuly explored. Is
+      defined outside function, so sucessive recursive calls can access entire dict.
+
+      Returns
+      -------
+      output
+
+      '''
+
+    path = []  #Cell path to get to speicifed cell.
+    output = mine.underground[loc]  #Add the speicied location cell value to output.
+    z = loc[2]-1    #Decrease z by 1, to move verticall up the mine.
+
+    prevCalcCoords = (loc[0], loc[1], loc[2] - 1)   #The cell directly above specifed loc.
+
+    #Check if prevCalcCoords has been calculated previosuly, if it has, combine path and sums.
     if prevCalcCoords in seenLocs:
         output += seenLocs[prevCalcCoords]['sum'].copy()
         path = seenLocs[prevCalcCoords]['path'].copy()
         path.append(prevCalcCoords)
     #end
 
+    #Calculate the cells dig_tolerence above the specified loc, in a donut shape.
     for x in range(-z,z+1):
         for y in range(-z, z+1):
             if 0 <= loc[0]-x < mine.len_x and 0 <= loc[1]-y < mine.len_y and (x,y) != (0,0):
@@ -444,23 +489,53 @@ def getParentsSum(mine, state, loc, seenLocs):
         #end
     #end
 
+    #Save loc just calculated into dictionary with path required to get there and output.
     seenLocs[loc] = dict({"sum":output, "path":path})
 
+    #Return the sum value of the specified cell.
     return output
 #end
 
 def search_rec(mine, state):
-    seenLocs = {}
+    '''
+      Recursive search function for search_dp_dig_plan,
+
+      Each function call returns the best sum and path for the remaining values in the mine.
+
+      Simplifies the mine by summing the cells above which are required to be mined to collect the specific cell.
+      Max value is then selected from mine and each corresponding cell is removed. Mine requirement is then recalculated
+      to update values in mine.
+
+
+      Parameters
+      ----------
+      mine : a Mine instance
+      state : a partially dug mine
+
+      Returns
+      -------
+      best_action_list, best_payoff, best_final_state
+
+      '''
+
+
+    #Store Values
+    seenLocs = {}   #Dictionay for getParentsSum, see function.
     maxSum = 0
     maxLoc = None
 
+    #Loop Through each cell in the mine.
     for z in range(mine.len_z):
         for y in range(mine.len_y):
             for x in range(mine.len_x):
 
+                #Check cell has not be dug previously
                 if state[(x,y,z)] == 0:
+
+                    #Get value of cell (x,y,z), incorporating cell above required to dig cell (x,y,z)
                     tempSum = getParentsSum(mine, state, (x, y, z), seenLocs)
 
+                    #Finds the max cell in the simplified mine.
                     if tempSum > maxSum:
                         maxSum = tempSum
                         maxLoc = (x,y,z)
@@ -470,16 +545,20 @@ def search_rec(mine, state):
         #end
     #end
 
+    #Stops recursion calls when simplified mine does not have a values greater than 0.
     if maxSum <= 0:
         return [], 0, state
     #end
 
+    #Digs cells required for the selected location.
     for p in seenLocs[maxLoc]['path']+[maxLoc]:
         state = np.array(mine.result(state, p))
     #end
 
+    #Recursive call.
     path, sum, state = search_rec(mine, state)
 
+    #For each recursive call this is the main return. It returns each sum,path and state,  required per recursion to dig the mine.
     return seenLocs[maxLoc]['path'] + [maxLoc] + path, seenLocs[maxLoc]['sum'] + sum, state
 #end
 
