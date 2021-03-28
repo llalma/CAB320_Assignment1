@@ -405,12 +405,20 @@ class Mine(search.Problem):
         raise NotImplementedError
     #end
 
+    def back2D(self, actions, state):
+        if self.flag2D:
+            for i, a in enumerate(np.array(actions)):
+                actions[i] = tuple(a[[0, 2]])
+            # end
+            state = np.squeeze(state)
+        # end
+
+        return actions, state
+    #end
+
     # ========================  Class Mine  ==================================
 
 def getParentsSum(mine, state, loc, seenLocs):
-    # if loc == (0, 0, 1):
-    #     print("f'")
-
     path = []
     output = mine.underground[loc]
     z = loc[2]-1
@@ -426,9 +434,12 @@ def getParentsSum(mine, state, loc, seenLocs):
     for x in range(-z,z+1):
         for y in range(-z, z+1):
             if 0 <= loc[0]-x < mine.len_x and 0 <= loc[1]-y < mine.len_y and (x,y) != (0,0):
-                output += mine.underground[(loc[0]-x, loc[1]-y,z-mine.dig_tolerance)]
-                path.append((loc[0]-x, loc[1]-y,z-mine.dig_tolerance))
-                # print((loc[0]-x, loc[1]-y,z-mine.dig_tolerance))
+
+                #Prevent values already used being used again
+                if state[(loc[0]-x, loc[1]-y,z-mine.dig_tolerance)] == 0:
+                    output += mine.underground[(loc[0]-x, loc[1]-y,z-mine.dig_tolerance)]
+                    path.append((loc[0]-x, loc[1]-y,z-mine.dig_tolerance))
+                #end
             #end
         #end
     #end
@@ -446,23 +457,30 @@ def search_rec(mine, state):
     for z in range(mine.len_z):
         for y in range(mine.len_y):
             for x in range(mine.len_x):
-                tempSum = getParentsSum(mine, state, (x, y, z), seenLocs)
 
-                if tempSum > maxSum:
-                    maxSum = tempSum
-                    maxLoc = (x,y,z)
+                if state[(x,y,z)] == 0:
+                    tempSum = getParentsSum(mine, state, (x, y, z), seenLocs)
+
+                    if tempSum > maxSum:
+                        maxSum = tempSum
+                        maxLoc = (x,y,z)
+                    #end
                 #end
             #end
         #end
     #end
 
-    for p in seenLocs[maxLoc]['path']:
-        state = mine.result(state, p)
+    if maxSum <= 0:
+        return [], 0, state
     #end
 
-    path, sum = search_rec(mine, state)
+    for p in seenLocs[maxLoc]['path']+[maxLoc]:
+        state = np.array(mine.result(state, p))
+    #end
 
-    return seenLocs[maxLoc]['path'] + path, seenLocs[maxLoc]['sum'] + sum
+    path, sum, state = search_rec(mine, state)
+
+    return seenLocs[maxLoc]['path'] + [maxLoc] + path, seenLocs[maxLoc]['sum'] + sum, state
 #end
 
 def search_dp_dig_plan(mine):
@@ -483,19 +501,10 @@ def search_dp_dig_plan(mine):
 
     '''
 
-    checkedLocations = {}
-
-    f = time.process_time()
-
-    path, sum = search_rec(mine, mine.initial)
-
-    print(str(time.process_time()-f) + " seconds")
-
-    print(path)
-    print(sum)
+    best_action_list, best_payoff, best_final_state  = search_rec(mine, mine.initial)
 
 
-    return mine.cumsum_mine, best_action_list, (depthValues & mine.underground)
+    return best_action_list, best_payoff, best_final_state
 #end
 
 
@@ -545,36 +554,27 @@ def find_action_sequence(s0, s1):
 
 
 
-
-
 def main():
     print(my_team())
 
-    v = np.array([[-1, -1, -1], [-1, 20, 4], [-1, -1, -1]])
+    v = np.array([[-1, -1, 10], [-1, 20, 4], [-1, -1, -1]])
     w = np.array([[1, 4], [2, 5], [3, 6]])
     x = np.array([[1, 4, 1, 1], [2, 5, 1, 1], [3, 6, 1, -1]])
-    y = np.array([[1, 4, 1, 1], [2, 5, 1, 1], [3, 6, 1, 1], [3, 6, 1, 1]])
+    y = np.array([[1, -6, 1, 1], [2, 5, 1, 1], [3, 6, 1, 1], [3, 6, 1, -10]])
     z = np.array([[[1, 4, 1, 1], [2, 5, 1, 1], [3, 6, 1, 1]], x - 1])
 
 
 
     mine = Mine(underground=v)
 
-    print(search_dp_dig_plan(mine))
+    best_action_list, best_payoff, best_final_state = search_dp_dig_plan(mine)
 
+    best_action_list, best_final_state = mine.back2D(best_action_list, best_final_state)
 
-    # mine.console_display()
+    mine.console_display()
 
-    # Testing
-    # mine.initial[0, 0, 0] = 1
-    # mine.initial[0, 0, 1] = 1
-
-    # print(mine.underground)
-    # print(mine.findCellValues())
-
-    # for loc in mine.actions(mine.initial):
-    #     print(loc)
-    # #end
+    print(best_action_list)
+    print(best_final_state)
 
 #end
         
