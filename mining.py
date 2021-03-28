@@ -46,6 +46,9 @@ from numbers import Number
 
 import search
 
+import time
+
+
 
 def my_team():
     '''    Return the list of the team members of this assignment submission
@@ -182,16 +185,13 @@ class Mine(search.Problem):
         self.flag2D = False
         if self.underground.ndim == 2:
             self.flag2D = True
-            np.expand_dims(self.underground,0)
+            self.underground = np.expand_dims(self.underground,1)
         #end
 
         self.initial = np.zeros_like(self.underground)
         self.cumsum_mine = 0.0
 
         self.len_x, self.len_y, self.len_z = self.underground.shape
-
-        print("hi")
-
     #end
 
 
@@ -232,7 +232,32 @@ class Mine(search.Problem):
         #end
         return L
     #end
-    
+
+    def getDepth(self, state, loc):
+        '''
+                Returns an int of the depth of the current surface location.
+
+                Parameters
+                ----------
+                state :
+                    represented with nested lists, tuples or a ndarray
+                    state of the partially dug mine
+
+                loc : surface coordinates of a cell.
+                    a singleton (x,) in case of a 2D mine
+                    a pair (x,y) in case of a 3D mine
+
+
+                Returns
+                -------
+                an int of the number of cells dug of the surface location
+
+                '''
+
+        return sum(state[loc])
+    #end
+
+
     def actions(self, state):
         '''
         Return a generator of valid actions in the give state 'state'
@@ -252,7 +277,29 @@ class Mine(search.Problem):
         '''        
         state = np.array(state)
 
-        raise NotImplementedError
+        ####################
+        #   Really bad need to find a better way.
+        ####################
+
+        for x in range(0, self.len_x, 1):
+            for y in range(0, self.len_y, 1):
+                validCheck = False
+                for neighbour in self.surface_neigbhours((x,y)):
+                    g = self.getDepth(state, (x,y))
+                    h = self.getDepth(state, neighbour)
+                    if abs(self.getDepth(state, (x,y)) - self.getDepth(state, neighbour)) <= self.dig_tolerance and self.getDepth(state, (x,y)) < self.len_z:
+                        validCheck = True
+                    else:
+                        validCheck = False
+                        break
+                    #end
+                #end
+
+                if validCheck:
+                    yield (x,y)
+                #end
+            #end
+
     #end
                 
   
@@ -343,12 +390,12 @@ class Mine(search.Problem):
         '''
         # convert to np.array in order to use tuple addressing
         # state[loc]   where loc is a tuple
-        raise NotImplementedError
+        return self.cumsum_mine
     #end
 
     def is_dangerous(self, state):
         '''
-        Return True iff the given state breaches the dig_tolerance constraints.
+        Return True if the given state breaches the dig_tolerance constraints.
         
         No loops needed in the implementation!
         '''
@@ -358,12 +405,66 @@ class Mine(search.Problem):
         raise NotImplementedError
     #end
 
-
-    
     # ========================  Class Mine  ==================================
-    
-    
-    
+
+def getParentsSum(mine, state, loc, seenLocs):
+    # if loc == (0, 0, 1):
+    #     print("f'")
+
+    path = []
+    output = mine.underground[loc]
+    z = loc[2]-1
+
+    prevCalcCoords = (loc[0], loc[1], loc[2] - 1)
+
+    if prevCalcCoords in seenLocs:
+        output += seenLocs[prevCalcCoords]['sum'].copy()
+        path = seenLocs[prevCalcCoords]['path'].copy()
+        path.append(prevCalcCoords)
+    #end
+
+    for x in range(-z,z+1):
+        for y in range(-z, z+1):
+            if 0 <= loc[0]-x < mine.len_x and 0 <= loc[1]-y < mine.len_y and (x,y) != (0,0):
+                output += mine.underground[(loc[0]-x, loc[1]-y,z-mine.dig_tolerance)]
+                path.append((loc[0]-x, loc[1]-y,z-mine.dig_tolerance))
+                # print((loc[0]-x, loc[1]-y,z-mine.dig_tolerance))
+            #end
+        #end
+    #end
+
+    seenLocs[loc] = dict({"sum":output, "path":path})
+
+    return output
+#end
+
+def search_rec(mine, state):
+    seenLocs = {}
+    maxSum = 0
+    maxLoc = None
+
+    for z in range(mine.len_z):
+        for y in range(mine.len_y):
+            for x in range(mine.len_x):
+                tempSum = getParentsSum(mine, state, (x, y, z), seenLocs)
+
+                if tempSum > maxSum:
+                    maxSum = tempSum
+                    maxLoc = (x,y,z)
+                #end
+            #end
+        #end
+    #end
+
+    for p in seenLocs[maxLoc]['path']:
+        state = mine.result(state, p)
+    #end
+
+    path, sum = search_rec(mine, state)
+
+    return seenLocs[maxLoc]['path'] + path, seenLocs[maxLoc]['sum'] + sum
+#end
+
 def search_dp_dig_plan(mine):
     '''
     Search using Dynamic Programming the most profitable sequence of 
@@ -381,8 +482,22 @@ def search_dp_dig_plan(mine):
     best_payoff, best_action_list, best_final_state
 
     '''
-    raise NotImplementedError
+
+    checkedLocations = {}
+
+    f = time.process_time()
+
+    path, sum = search_rec(mine, mine.initial)
+
+    print(str(time.process_time()-f) + " seconds")
+
+    print(path)
+    print(sum)
+
+
+    return mine.cumsum_mine, best_action_list, (depthValues & mine.underground)
 #end
+
 
 def search_bb_dig_plan(mine):
     '''
@@ -435,10 +550,31 @@ def find_action_sequence(s0, s1):
 def main():
     print(my_team())
 
-    x = np.array([[1, 4, 1, 1], [2, 5, 1, 1], [3, 6, 1, 1]])
-    y = np.array([[[1, 4, 1, 1], [2, 5, 1, 1], [3, 6, 1, 1]], x - 1])
+    v = np.array([[-1, -1, -1], [-1, 20, 4], [-1, -1, -1]])
+    w = np.array([[1, 4], [2, 5], [3, 6]])
+    x = np.array([[1, 4, 1, 1], [2, 5, 1, 1], [3, 6, 1, -1]])
+    y = np.array([[1, 4, 1, 1], [2, 5, 1, 1], [3, 6, 1, 1], [3, 6, 1, 1]])
+    z = np.array([[[1, 4, 1, 1], [2, 5, 1, 1], [3, 6, 1, 1]], x - 1])
 
-    mine = Mine(underground=x)
+
+
+    mine = Mine(underground=v)
+
+    print(search_dp_dig_plan(mine))
+
+
+    # mine.console_display()
+
+    # Testing
+    # mine.initial[0, 0, 0] = 1
+    # mine.initial[0, 0, 1] = 1
+
+    # print(mine.underground)
+    # print(mine.findCellValues())
+
+    # for loc in mine.actions(mine.initial):
+    #     print(loc)
+    # #end
 
 #end
         
