@@ -468,12 +468,18 @@ def getParentsSum(mine, state, loc, seenLocs):
 
     prevCalcCoords = (loc[0], loc[1], loc[2] - 1)   #The cell directly above specifed loc.
 
-    #Check if prevCalcCoords has been calculated previosuly, if it has, combine path and sums.
+    #Check if prevCalcCoords has been calculated previosuly, if it has, combine path and sums. Else find the sum for the above node, recursivly.
     if prevCalcCoords in seenLocs:
         output += seenLocs[prevCalcCoords]['sum'].copy()
         path = seenLocs[prevCalcCoords]['path'].copy()
         path.append(prevCalcCoords)
+    elif 0<=loc[0]<mine.len_x and 0<=loc[1]<mine.len_y and 0<=loc[2]-1<mine.len_z:
+        output += getParentsSum(mine, state, prevCalcCoords, seenLocs)
+        path = seenLocs[prevCalcCoords]['path'].copy()
+        path.append(prevCalcCoords)
     #end
+
+
 
     #Calculate the cells dig_tolerence above the specified loc, in a donut shape.
     for x in range(-z,z+1):
@@ -517,6 +523,8 @@ def search_rec(mine, state):
       best_action_list, best_payoff, best_final_state
 
       '''
+
+    tempSum = getParentsSum(mine, state, (x, y, z), seenLocs)
 
 
     #Store Values
