@@ -466,6 +466,11 @@ def getParentsSum(mine, state, loc, seenLocs):
     output = mine.underground[loc]  #Add the speicied location cell value to output.
     z = loc[2]-1    #Decrease z by 1, to move verticall up the mine.
 
+    #Check if cell has been mined previosuly, in this case can return 0 as it would sum ot 0 anyway.
+    if state[loc] == 1:
+        return 0
+    #end
+
     prevCalcCoords = (loc[0], loc[1], loc[2] - 1)   #The cell directly above specifed loc.
 
     #Check if prevCalcCoords has been calculated previosuly, if it has, combine path and sums.
@@ -496,6 +501,10 @@ def getParentsSum(mine, state, loc, seenLocs):
     return output
 #end
 
+# def test(mine, state, loc, mined):
+#
+# #end
+
 def search_rec(mine, state):
     '''
       Recursive search function for search_dp_dig_plan,
@@ -525,24 +534,16 @@ def search_rec(mine, state):
     maxLoc = None
 
     #Loop Through each cell in the mine.
-    for z in range(mine.len_z):
-        for y in range(mine.len_y):
-            for x in range(mine.len_x):
+    x,y,z = np.where(state == 0)
+    for loc in zip(x,y,z):
+        # Get value of cell (x,y,z), incorporating cell above required to dig cell (x,y,z)
+        tempSum = getParentsSum(mine, state, loc, seenLocs)
 
-                #Check cell has not be dug previously
-                if state[(x,y,z)] == 0:
-
-                    #Get value of cell (x,y,z), incorporating cell above required to dig cell (x,y,z)
-                    tempSum = getParentsSum(mine, state, (x, y, z), seenLocs)
-
-                    #Finds the max cell in the simplified mine.
-                    if tempSum > maxSum:
-                        maxSum = tempSum
-                        maxLoc = (x,y,z)
-                    #end
-                #end
-            #end
-        #end
+        # Finds the max cell in the simplified mine.
+        if tempSum > maxSum:
+            maxSum = tempSum
+            maxLoc = loc
+        # end
     #end
 
     #Stops recursion calls when simplified mine does not have a values greater than 0.
@@ -558,7 +559,7 @@ def search_rec(mine, state):
     #Recursive call.
     path, sum, state = search_rec(mine, state)
 
-    #For each recursive call this is the main return. It returns each sum,path and state,  required per recursion to dig the mine.
+    #For each recursive call this is the main return. It returns each sum,path and state, required per recursion to dig the mine.
     return seenLocs[maxLoc]['path'] + [maxLoc] + path, seenLocs[maxLoc]['sum'] + sum, state
 #end
 
@@ -654,6 +655,7 @@ def main():
 
     print(best_action_list)
     print(best_final_state)
+    print(best_payoff)
 
 #end
         
