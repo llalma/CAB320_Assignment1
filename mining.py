@@ -501,11 +501,72 @@ def getParentsSum(mine, state, loc, seenLocs):
     return output
 #end
 
-# def test(mine, state, loc, mined):
-#
-# #end
+def ringCoords(mine, loc):
+    z = loc[2] - 1  # Decrease z by 1, to move vertical up the mine.
 
-def search_rec(mine, state):
+    outputCoords = []
+
+    #Calculate the cells dig_tolerence above the specified loc, in a donut shape.
+    for x in range(-z,z+1):
+        for y in range(-z, z+1):
+            if 0 <= loc[0]-x < mine.len_x and 0 <= loc[1]-y < mine.len_y and (x,y) != (0,0):
+                outputCoords.append((loc[0]-x, loc[1]-y,z-mine.dig_tolerance))
+            #end
+        #end
+    #end
+
+    return outputCoords
+#end
+
+def test(mine, state, currentLoc, pathTaken, visitedLocs):
+
+    outputSum = 0
+    outputPath = []
+
+
+    #Will only trigger if has already been mined, Therefore cell will always return 0
+    #and a blank path.
+    if currentLoc in pathTaken:
+        return 0, []
+    elif currentLoc in visitedLocs:
+        return visitedLocs[currentLoc]['sum'],visitedLocs[currentLoc]['path']
+    #end
+
+    #Get value of loc directly above currentLoc
+    aboveLoc = (currentLoc[0], currentLoc[1], currentLoc[2]-1)
+
+    #If cell has been previosuly calculated, get value from dict
+    if aboveLoc in visitedLocs:
+        outputSum += visitedLocs[aboveLoc]["sum"]
+        outputPath += visitedLocs[aboveLoc]["path"]
+    elif 0<=aboveLoc[2]<mine.len_z:
+        outputSum, outputPath = test(mine,state,aboveLoc,pathTaken, visitedLocs)
+    #end
+
+    #Gets the ring sum above currentLoc
+    for loc in ringCoords(mine, currentLoc):
+        s,p = test(mine, state, loc, pathTaken, visitedLocs)
+
+        outputSum += s
+        outputPath += (p)
+    #end
+
+    #Add currentLoc value and path
+    outputSum += mine.underground[currentLoc]
+    outputPath += [(currentLoc)]
+
+    #Add to dict to use values for locs below currentLoc.
+    visitedLocs[currentLoc] = {"sum": outputSum, "path": outputPath}
+
+    # print(len(visitedLocs))
+    #
+    # if len(visitedLocs) == 512:
+    #     print("")
+
+    return outputSum, outputPath
+#end
+
+def search_rec(mine, state, visitedLocs={}, bestSum=0, bestPath=[]):
     '''
       Recursive search function for search_dp_dig_plan,
 
@@ -528,39 +589,50 @@ def search_rec(mine, state):
       '''
 
 
-    #Store Values
-    seenLocs = {}   #Dictionay for getParentsSum, see function.
-    maxSum = 0
-    maxLoc = None
+    # g,h = test(mine,state,(0,0,0), pathTaken, visitedLocs)
+    # pathTaken += h
+    #
+    # g, h = test(mine, state, (0, 0, 1), pathTaken, visitedLocs)
+    #
+    # pathTaken = h
+    # print(g)
+    # print(h)
 
     #Loop Through each cell in the mine.
-    x,y,z = np.where(state == 0)
-    for loc in zip(x,y,z):
-        # Get value of cell (x,y,z), incorporating cell above required to dig cell (x,y,z)
-        tempSum = getParentsSum(mine, state, loc, seenLocs)
 
-        # Finds the max cell in the simplified mine.
-        if tempSum > maxSum:
-            maxSum = tempSum
-            maxLoc = loc
-        # end
-    #end
+    locs = np.where(state == 0)
+    print(len(locs[0]))
+    if len(locs) == 3:
+        x,y,z = locs
+        for loc in zip(x,y,z):
+            s,p = test(mine,state, loc, bestPath, visitedLocs)
 
-    #Stops recursion calls when simplified mine does not have a values greater than 0.
-    if maxSum <= 0:
-        return [], 0, state
-    #end
+            if s > bestSum:
+                bestSum = s
+                bestPath = p
+            #end
+        #end
 
-    #Digs cells required for the selected location.
-    for p in seenLocs[maxLoc]['path']+[maxLoc]:
-        state = np.array(mine.result(state, p))
-    #end
+        if bestSum > 0:
+            #Dig specified location
+            for action in bestPath:
+                state = mine.result(state,action)
+            #end
+            state = np.array(state)
 
-    #Recursive call.
-    path, sum, state = search_rec(mine, state)
+            tempSum, tempPath, state = search_rec(mine, state, visitedLocs, bestPath=bestPath)
 
-    #For each recursive call this is the main return. It returns each sum,path and state, required per recursion to dig the mine.
-    return seenLocs[maxLoc]['path'] + [maxLoc] + path, seenLocs[maxLoc]['sum'] + sum, state
+            #Remove any locations already dug, from previous recursions
+            for loc in list(set(bestPath)&set(tempPath)):
+                tempSum -= mine.underground[loc]
+                tempPath.remove(loc)
+            #end
+
+            bestSum += tempSum
+            bestPath += tempPath
+        else:
+            return 0, [], state
+    return bestSum, bestPath, state
 #end
 
 def search_dp_dig_plan(mine):
@@ -581,7 +653,7 @@ def search_dp_dig_plan(mine):
 
     '''
 
-    best_action_list, best_payoff, best_final_state  = search_rec(mine, mine.initial)
+    best_payoff, best_action_list, best_final_state  = search_rec(mine, mine.initial)
 
 
     return best_action_list, best_payoff, best_final_state
@@ -648,10 +720,6 @@ def main():
     mine = Mine(underground=v)
 
     best_action_list, best_payoff, best_final_state = search_dp_dig_plan(mine)
-
-    best_action_list, best_final_state = mine.back2D(best_action_list, best_final_state)
-
-    mine.console_display()
 
     print(best_action_list)
     print(best_final_state)
