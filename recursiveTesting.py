@@ -6,14 +6,14 @@ import time
 def test1():
     #Test for runtime, can handle 15x15x15 in less than a minute
 
-    f = 7
+    f = 10
 
     array = np.random.randint(-10,10,(f,f,f))
 
     start = time.time()
     mine = mining.Mine(underground=array)
     best_action_list, best_payoff, best_final_state = mining.search_dp_dig_plan(mine)
-    best_action_list, best_final_state = mine.back2D(best_action_list, best_final_state)
+    # best_action_list, best_final_state = mine.back2D(best_action_list, best_final_state)
 
     print(best_action_list)
     print(best_final_state)
