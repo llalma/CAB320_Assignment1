@@ -40,7 +40,7 @@ import matplotlib.pyplot as plt
 
 import itertools
 
-import functools # @lru_cache(maxsize=32)
+from functools import lru_cache
 
 from numbers import Number
 
@@ -321,7 +321,11 @@ class Mine(search.Problem):
         new_state = np.array(state)  # Make a copy
         for action in actions:
             new_state[action] += 1
-            del prevSeenLocs[action]
+
+            #Remove it from dict as it will never be used again
+            if action in prevSeenLocs:
+                del prevSeenLocs[action]
+            #end
         #end
         return new_state
     #end
@@ -568,7 +572,7 @@ def getParentsSum(mine, state, loc, prevSeenLocs):
     return outputSum, outputPath
 #end
 
-def search_rec(mine, state, prevSeenLocs = {}):
+def search_rec(mine, state, prevSeenLocs = {}, minePath=[], mineSum=[]):
     '''
       Recursive search function for search_dp_dig_plan,
 
@@ -590,9 +594,6 @@ def search_rec(mine, state, prevSeenLocs = {}):
 
       '''
 
-    mineSum = 0
-    minePath = []
-
     #Loop Through each cell in the mine.
 
     try:
@@ -608,22 +609,16 @@ def search_rec(mine, state, prevSeenLocs = {}):
                 #end
 
                 if s > 0:
-                    mineSum += s
-                    minePath += p
+                    mineSum += [s]
+
+                    diff = list(set(p) - (set(p)&set(minePath)))
+                    minePath += diff
 
                     # Perform digging action
-                    state = mine.results(state, p, prevSeenLocs)
+                    state = mine.results(state, diff, prevSeenLocs)
 
-
-
-                    tempSum, tempPath, state = search_rec(mine, np.array(state))
-                    mineSum += tempSum
-                    minePath += tempPath
+                    _,_,state = search_rec(mine, np.array(state), minePath=minePath, mineSum=mineSum)
                     break
-                else:
-                    #Set a bad flag and dont go back there
-                    # state[loc] = -1
-                    continue
                 #end
             #end
         #end
@@ -631,7 +626,7 @@ def search_rec(mine, state, prevSeenLocs = {}):
         print(e)
         print("No avaliable locations to dig remaining")
     #end
-    return mineSum, minePath, state
+    return sum(mineSum), minePath, state
 #end
 
 

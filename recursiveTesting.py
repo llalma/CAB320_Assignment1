@@ -5,8 +5,8 @@ import time
 
 def test1():
     #Test for runtime, can handle 15x15x15 in less than a minute
-
-    f = 10
+    np.random.seed(0)
+    f = 8
 
     array = np.random.randint(-10,10,(f,f,f))
 
