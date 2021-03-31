@@ -457,75 +457,6 @@ class Mine(search.Problem):
 
     # ========================  Class Mine  ==================================
 
-def getParentsSum2(mine, state, loc, seenLocs):
-    '''
-      Gets the specified cell value, specified by loc, incorporating the cells values required to get to "loc".
-
-      Function works with a pattern that was noticed, further details in report. Briefly, To calculate any cell, the
-       cell directly above loc, with the simplified mine value, can be added with cell values dig tolerance above the loc.
-       Which produces an upside down pyramid shape, with the point being on the loc location.
-
-       E.g. dig_tolerence = 1, len_x = 3, len_y = 1, len_z = 3 , loc = (1,0,2)
-
-       getParentsSum(loc=(1,0,1)) + mine.underground[(0,0,0)] + mine.underground[(0,0,2)]
-
-       Therefore if loc(1,0,1) is saved in dictionary with its values and path, the recursive search for
-       its values can be skipped.
-
-
-      Parameters
-      ----------
-      mine : a Mine instance
-      state : a partially dug mine
-      loc : a 3d tuple (x,y,z), to a location in the mine.
-      seenLocs : a dictionary with keys as loc coordinates. Stores the sum and path for locs previosuly explored. Is
-      defined outside function, so sucessive recursive calls can access entire dict.
-
-      Returns
-      -------
-      output
-
-      '''
-
-    path = []  #Cell path to get to speicifed cell.
-    output = mine.underground[loc]  #Add the speicied location cell value to output.
-    z = loc[2]-1    #Decrease z by 1, to move verticall up the mine.
-
-    #Check if cell has been mined previosuly, in this case can return 0 as it would sum ot 0 anyway.
-    if state[loc] == 1:
-        return 0
-    #end
-
-    prevCalcCoords = (loc[0], loc[1], loc[2] - 1)   #The cell directly above specifed loc.
-
-    #Check if prevCalcCoords has been calculated previosuly, if it has, combine path and sums.
-    if prevCalcCoords in seenLocs:
-        output += seenLocs[prevCalcCoords]['sum'].copy()
-        path = seenLocs[prevCalcCoords]['path'].copy()
-        path.append(prevCalcCoords)
-    #end
-
-    #Calculate the cells dig_tolerence above the specified loc, in a donut shape.
-    for x in range(-z,z+1):
-        for y in range(-z, z+1):
-            if 0 <= loc[0]-x < mine.len_x and 0 <= loc[1]-y < mine.len_y and (x,y) != (0,0):
-
-                #Prevent values already used being used again
-                if state[(loc[0]-x, loc[1]-y,z-mine.dig_tolerance)] == 0:
-                    output += mine.underground[(loc[0]-x, loc[1]-y,z-mine.dig_tolerance)]
-                    path.append((loc[0]-x, loc[1]-y,z-mine.dig_tolerance))
-                #end
-            #end
-        #end
-    #end
-
-    #Save loc just calculated into dictionary with path required to get there and output.
-    seenLocs[loc] = dict({"sum":output, "path":path})
-
-    #Return the sum value of the specified cell.
-    return output
-#end
-
 def getRingCoords(mine, loc):
     z = loc[2] - 1  # Decrease z by 1, to move vertical up the mine.
 
@@ -542,8 +473,6 @@ def getRingCoords(mine, loc):
 
     return outputCoords
 #end
-
-
 
 def getParentsSum(mine, state, loc, prevSeenLocs):
     aboveCellCoords = (loc[0], loc[1], loc[2] - 1)  # The cell directly above specifed loc.
@@ -655,7 +584,6 @@ def search_dp_dig_plan(mine):
     return best_action_list, best_payoff, best_final_state
 #end
 
-
 def search_bb_dig_plan(mine):
     '''
     Compute, using Branch and Bound, the most profitable sequence of 
@@ -696,30 +624,68 @@ def find_action_sequence(s0, s1):
     '''    
     # approach: among all columns for which s0 < s1, pick the column loc
     # with the smallest s0[loc]
-    raise NotImplementedError
+
+    #Convert both states to numpy array.
+    s0 = np.array(s0)
+    s1 = np.array(s1)
+
+    outputActionList = set()
+
+    #Convert 2D mines to 3D mines and set flag to convert back.
+    if s0.ndim == 2:
+        s0 = np.expand_dims(s0, 1)
+        s1 = np.expand_dims(s1, 1)
+    #end
+
+    while not np.array_equal(s0, s1):
+
+        minLoc = (-1, -1)
+        minDiff = float("Inf")
+
+        for x in range(s0.shape[0]):
+            for y in range(s0.shape[1]):
+                loc = (x,y)
+                diff = sum(s1[loc])-sum(s0[loc])
+
+                if diff < minDiff and sum(s0[loc]) < sum(s1[loc]):
+                    minLoc = (loc[0],loc[1],sum(s0[loc]))
+                    minDiff = diff
+                #end
+            #end
+        #end
+
+        outputActionList.add(minLoc)
+        s0[minLoc] = 1
+    #end
+
+    return outputActionList
 #end
 
 
-
-
 def main():
-    print(my_team())
+    # print(my_team())
+    #
+    # v = np.array([[-1, -1, 10], [-1, 20, 4], [-1, -1, -1]])
+    # w = np.array([[1, 4], [2, 5], [3, 6]])
+    # x = np.array([[1, 4, 1, 1], [2, 5, 1, 1], [3, 6, 1, -1]])
+    # y = np.array([[1, -6, 1, 1], [2, 5, 1, 1], [3, 6, 1, 1], [3, 6, 1, -10]])
+    # z = np.array([[[1, 4, 1, 1], [2, 5, 1, 1], [3, 6, 1, 1]], x - 1])
+    #
+    #
+    #
+    # mine = Mine(underground=v)
+    #
+    # best_action_list, best_payoff, best_final_state = search_dp_dig_plan(mine)
+    #
+    # print(best_action_list)
+    # print(best_final_state)
+    # print(best_payoff)
 
-    v = np.array([[-1, -1, 10], [-1, 20, 4], [-1, -1, -1]])
-    w = np.array([[1, 4], [2, 5], [3, 6]])
-    x = np.array([[1, 4, 1, 1], [2, 5, 1, 1], [3, 6, 1, -1]])
-    y = np.array([[1, -6, 1, 1], [2, 5, 1, 1], [3, 6, 1, 1], [3, 6, 1, -10]])
-    z = np.array([[[1, 4, 1, 1], [2, 5, 1, 1], [3, 6, 1, 1]], x - 1])
 
+    s0 = [[1,0,0], [0,0,0], [0,0,0]]
+    s1 = [[1, 1, 1], [1, 0, 0], [0, 0, 0]]
 
-
-    mine = Mine(underground=v)
-
-    best_action_list, best_payoff, best_final_state = search_dp_dig_plan(mine)
-
-    print(best_action_list)
-    print(best_final_state)
-    print(best_payoff)
+    find_action_sequence(s0,s1)
 
 #end
         
