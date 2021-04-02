@@ -599,6 +599,7 @@ def bbSearch(mine, state, loc=None):
     childMax = 0
 
     for child in gen:
+
         child = (child[0], child[1], sum(state[child]))
         if loc != None:
             tempChildSum = bbSearch(mine, mine.result(state, child), child) + mine.underground[loc]
@@ -713,7 +714,8 @@ def main():
     print(best_final_state)
     print(best_payoff)
 
-    # search_bb_dig_plan(mine)
+    search_bb_dig_plan(mine)
+
 
     #
     # s0 = [[1,0,0], [0,0,0], [0,0,0]]
