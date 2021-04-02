@@ -408,7 +408,7 @@ class Mine(search.Problem):
         # convert to np.array in order to use tuple addressing
         # state[loc]   where loc is a tuple
 
-        return sum(state & self.underground)
+        return sum(state * self.underground)
     #end
 
     def is_dangerous(self, state):
@@ -465,18 +465,15 @@ class Mine(search.Problem):
     # ========================  Class Mine  ==================================
 
 def getRingCoords(mine, loc):
-    z = loc[2] - 1  # Decrease z by 1, to move vertical up the mine.
-
     outputCoords = []
 
-    #Calculate the cells dig_tolerence above the specified loc, in a donut shape.
-    for x in range(-z,z+1):
-        for y in range(-z, z+1):
-            if 0 <= loc[0]-x < mine.len_x and 0 <= loc[1]-y < mine.len_y and (x,y) != (0,0):
-                outputCoords.append((loc[0]-x, loc[1]-y,z-mine.dig_tolerance))
-            #end
-        #end
-    #end
+    if (loc[2]-mine.dig_tolerance >= 0):
+
+        for x_loc in range(-1,2):
+            for y_loc in range(-1,2):
+                if not (x_loc == 0 and y_loc == 0):
+                    if (0<= loc[0] - x_loc < mine.len_x and 0<= loc[1] - y_loc < mine.len_y):
+                        outputCoords.append((loc[0] - x_loc, loc[1] - y_loc, loc[2] - mine.dig_tolerance))
 
     return outputCoords
 #end
@@ -495,6 +492,8 @@ def getParentsSum(mine, state, loc, prevSeenLocs):
 
     #To get loc cell value, need to add cell directly above and cells in ring shape around it. more specific in report
     for coords in [aboveCellCoords] + ringCoords:
+        if coords == (2, 0, 0):
+            print("")
         if mine.validCoords(coords) and state[coords] == 0:
             tempSum, tempPath = getParentsSum(mine,state,coords,prevSeenLocs)
             outputSum += tempSum
@@ -537,7 +536,8 @@ def search_rec(mine, state, prevSeenLocs = {}, minePath=[], mineSum=[]):
 
         #Start at bottom of mine, to remove more cells initially.
         for loc in zip(np.flip(x),np.flip(y),np.flip(z)):
-            if state[loc] == 0:
+            if state[loc] == 0 and mine.underground[loc] > 0:
+
                 if loc in prevSeenLocs:
                     s,p = prevSeenLocs[loc]['Sum'], prevSeenLocs[loc]['Path']
                 else:
@@ -562,7 +562,8 @@ def search_rec(mine, state, prevSeenLocs = {}, minePath=[], mineSum=[]):
         print(e)
         print("No avaliable locations to dig remaining")
     #end
-    return sum(mineSum), minePath, state
+
+    return np.sum(mine.underground * state), minePath, state
 #end
 
 
@@ -591,6 +592,27 @@ def search_dp_dig_plan(mine):
     return best_action_list, best_payoff, best_final_state
 #end
 
+def bbSearch(mine, state, loc=None):
+    state = np.array(state)
+
+    gen = mine.actions(state)
+    childMax = 0
+
+    for child in gen:
+        child = (child[0], child[1], sum(state[child]))
+        if loc != None:
+            tempChildSum = bbSearch(mine, mine.result(state, child), child) + mine.underground[loc]
+        else:
+            tempChildSum = bbSearch(mine, mine.result(state, child), child)
+        #end
+
+        if tempChildSum > childMax:
+            childMax = tempChildSum
+        #end
+    #end
+    return childMax
+#end
+
 def search_bb_dig_plan(mine):
     '''
     Compute, using Branch and Bound, the most profitable sequence of 
@@ -607,6 +629,8 @@ def search_bb_dig_plan(mine):
     best_payoff, best_action_list, best_final_state
 
     '''
+
+    print(bbSearch(mine, mine.initial))
     
     raise NotImplementedError
 #end
@@ -672,7 +696,8 @@ def find_action_sequence(s0, s1):
 def main():
     # print(my_team())
     #
-    # v = np.array([[-1, -1, 10], [-1, 20, 4], [-1, -1, -1]])
+    v = np.array([[-1, -1, 10], [-1, 20, 4], [-1, -1, -1]])
+    vDash = np.array([[-1, -1, 10, 5], [-1, -20, -4, -7], [-1, -1, -1, -21]])
     # w = np.array([[1, 4], [2, 5], [3, 6]])
     # x = np.array([[1, 4, 1, 1], [2, 5, 1, 1], [3, 6, 1, -1]])
     # y = np.array([[1, -6, 1, 1], [2, 5, 1, 1], [3, 6, 1, 1], [3, 6, 1, -10]])
@@ -680,24 +705,27 @@ def main():
     #
     #
     #
-    # mine = Mine(underground=v)
+    mine = Mine(underground=vDash, dig_tolerance=3)
+
+    best_action_list, best_payoff, best_final_state = search_dp_dig_plan(mine)
+
+    print(best_action_list)
+    print(best_final_state)
+    print(best_payoff)
+
+    # search_bb_dig_plan(mine)
+
     #
-    # best_action_list, best_payoff, best_final_state = search_dp_dig_plan(mine)
-    #
-    # print(best_action_list)
-    # print(best_final_state)
-    # print(best_payoff)
+    # s0 = [[1,0,0], [0,0,0], [0,0,0]]
+    # s1 = [[1, 1, 1], [1, 0, 0], [0, 0, 0]]
 
-
-    s0 = [[1,0,0], [0,0,0], [0,0,0]]
-    s1 = [[1, 1, 1], [1, 0, 0], [0, 0, 0]]
-
-    find_action_sequence(s0,s1)
+    # find_action_sequence(s0,s1)
 
 #end
         
 if __name__ == "__main__":
     main()
+
 #end
         
         
