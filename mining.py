@@ -53,7 +53,7 @@ import time
 def my_team():
     '''    Return the list of the team members of this assignment submission
     as a list    of triplet of the form (student_number, first_name, last_name)        '''
-    return [(9960392,'Liam','Hulsman-Benson'), (1234568, 'Grace', 'Hopper')]
+    return [(9960392,'Liam','Hulsman-Benson'), (10077413, 'Alexander', 'Farrall')]
 #end
 
     
@@ -418,7 +418,14 @@ class Mine(search.Problem):
         No loops needed in the implementation!
         '''
         # convert to np.array in order to use numpy operators
-        state = np.array(state)         
+        state = np.array(state)
+
+
+
+
+        stateSummed = np.sum(state, axis=2)
+
+
 
         raise NotImplementedError
     #end
