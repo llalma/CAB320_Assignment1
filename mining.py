@@ -694,27 +694,39 @@ def find_action_sequence(s0, s1):
         s1 = np.expand_dims(s1, 1)
     #end
 
-    while not np.array_equal(s0, s1):
+    print(s0)
+    print(s1)
 
-        minLoc = (-1, -1)
-        minDiff = float("Inf")
+    s0Summed = np.sum(s0, axis=2)
+    s1Summed = np.sum(s1, axis=2)
 
-        for x in range(s0.shape[0]):
-            for y in range(s0.shape[1]):
-                loc = (x,y)
+    temp = np.where(s0Summed < s1Summed)
 
-                if sum(s0[loc]) < sum(s1[loc]):
-                    if sum(s0[loc]) < minDiff:
-                        minLoc = (loc[0],loc[1],sum(s0[loc]))
-                        minDiff = sum(s0[loc])
-                    #end
-                #end
-            #end
-        #end
+    print(s0Summed[temp[0]])
 
-        outputActionList.append(minLoc)
-        s0[minLoc] = 1
-    #end
+    # while not np.array_equal(s0, s1):
+    #
+    #     minLoc = (-1, -1)
+    #     minDiff = float("Inf")
+
+
+
+    #     for x in range(s0.shape[0]):
+    #         for y in range(s0.shape[1]):
+    #             loc = (x,y)
+    #
+    #             if s0Summed[loc] < s1Summed[loc]:
+    #                 if s0Summed[loc] < minDiff:
+    #                     minLoc = (loc[0],loc[1],s0Summed[loc])
+    #                     minDiff = s0Summed[loc]
+    #                 #end
+    #             #end
+    #         #end
+    #     #end
+    #
+    #     outputActionList.append(minLoc)
+    #     s0[minLoc] = 1
+    # #end
 
     return outputActionList
 #end
@@ -747,9 +759,11 @@ def main():
     s0 = [[1,0,0], [0,0,0], [0,0,0]]
     s1 = [[1, 1, 1], [1, 0, 0], [0, 0, 0]]
 
-    print(mine.is_dangerous(s0))
+    mine.plot_state(np.array(s1))
 
-    # find_action_sequence(s0,s1)
+    # print(mine.is_dangerous(s0))
+
+    find_action_sequence(s0,s1)
 
 #end
         
