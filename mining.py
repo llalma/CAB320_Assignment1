@@ -257,7 +257,6 @@ class Mine(search.Problem):
         return sum(state[loc])
     #end
 
-
     def actions(self, state):
         '''
         Return a generator of valid actions in the give state 'state'
@@ -299,10 +298,8 @@ class Mine(search.Problem):
                     yield (x,y)
                 #end
             #end
-
     #end
-                
-  
+
     def result(self, state, action):
         """Return the state that results from executing the given
         action in the given state. The action must a valid actions.
@@ -329,8 +326,7 @@ class Mine(search.Problem):
         #end
         return new_state
     #end
-                
-    
+
     def console_display(self):
         '''
         Display the mine on the console
@@ -411,7 +407,6 @@ class Mine(search.Problem):
         return sum(state * self.underground)
     #end
 
-
     def is_dangerous(self, state):
         '''
         Return True if the given state breaches the dig_tolerance constraints.
@@ -426,13 +421,18 @@ class Mine(search.Problem):
             state = np.expand_dims(state, 1)
         # end
 
+        #Height map of mine, by summing mine along Z axis.
         summedState = np.sum(state, axis=2)
 
+        #Valid x and y coords, to be passed to vectorized function, which is why is not a list of coords
         xCoords = range(self.len_x)
         yCoords = range(self.len_y)
 
+        #Vectorize the compareNeighboursHeights and make summedState not be vectorized when called with function.
+        #Uses vectorization to avoid loops.
         vectoredFunction = np.vectorize(self.compareNeighboursHeights, excluded=['summedState'])
 
+        #Call the vectorize function and flip the returned result. False == mine is invalid, True == mine if valid.
         return False not in vectoredFunction(summedState=summedState,x=xCoords, y=yCoords)
     #end
 
@@ -450,6 +450,8 @@ class Mine(search.Problem):
         actions, state
         """
 
+        #Check if the 2D flag has been set. If it has remove the dimension that was added initially
+        #and return actions and state
         if self.flag2D:
             for i, a in enumerate(np.array(actions)):
                 actions[i] = tuple(a[[0, 2]])
@@ -461,6 +463,16 @@ class Mine(search.Problem):
     #end
 
     def validCoords(self, loc):
+        """
+        Checks if a given loc is a valid location within the mines limits.
+        Parameters
+        ----------
+        loc - tuple, (x,y,z) of mine coordinates
+
+        Returns
+        -------
+            Boolean if loc is within the mine
+        """
 
         if 0<=loc[0]<self.len_x and 0<=loc[1]<self.len_y and 0<=loc[2]<self.len_z:
             return True
@@ -469,17 +481,36 @@ class Mine(search.Problem):
     #end
 
     def compareNeighboursHeights(self, summedState, x, y):
+        """
+        Compares a cells height to its neighbour cell heights. Checks if the state of the mine is valid. Is verctorised
+        in "is_dangerous" to remove the use of loops.
+
+        Parameters
+        ----------
+        summedState - The summation of a state along the Z axis, represents the depth of each coloumn.
+        x - a list of X coordinates, ranging from 0 to len_x
+        y - a list of Y coordinates, ranging from 0 to len_y
+
+        Returns
+        -------
+            Returns x*y array of booleans, each cell represents if a cell is valid or invalid, valid == true.
+        """
+
+        #Put x and y into tuple of (x,y) for coords
         loc = (x,y)
 
         #Returns heights of all neighbours of loc
         lambdaFunc = lambda nLoc: summedState[nLoc]
         heightNeighbours = list(map(lambdaFunc, self.surface_neigbhours(loc)))
 
-        o = list(map(lambda h: abs(summedState[loc]-h) <= self.dig_tolerance, heightNeighbours))
+        #Check each loc height to each of its neighbours, if a locaiton is <= to dig tolerance returns true.
+        check = list(map(lambda h: abs(summedState[loc]-h) <= self.dig_tolerance, heightNeighbours))
 
-        if False in o:
+        #If check contains a false, meaning one of the neighbours makes a cell invalid, return false.
+        if False in check:
             return False
 
+        #Default value if every surface cell in mine is valid.
         return True
     #end
 
@@ -487,20 +518,54 @@ class Mine(search.Problem):
 
 #DP Arroach
 def getRingCoords(mine, loc):
+    """
+    For a given loc, returns the coordinates "dig_tolereance" above the given loc. Used to find the cells required to
+    dig a certain cell.
+    Parameters
+    ----------
+    mine - A Mine instance
+    loc - location in a mine, (x,y,z)
+
+    Returns
+    -------
+    list of coords, which are needed to dig the given loc.
+    """
     outputCoords = []
 
+    #Check the rig coords are within the mine.
     if (loc[2]-mine.dig_tolerance >= 0):
 
+        #Loop though a 3x3 grid of x and y values
         for x_loc in range(-1,2):
             for y_loc in range(-1,2):
+
+                #Exclude middle of 3x3 grid.
                 if not (x_loc == 0 and y_loc == 0):
+
+                    #Check each location is valid within mine.
                     if (0<= loc[0] - x_loc < mine.len_x and 0<= loc[1] - y_loc < mine.len_y):
+
+                        #Add a valid location to output coords to be checked later.
                         outputCoords.append((loc[0] - x_loc, loc[1] - y_loc, loc[2] - mine.dig_tolerance))
 
     return outputCoords
 #end
 
 def getParentsSum(mine, state, loc, prevSeenLocs):
+    """
+    When given a loc it returns the sum and path for the given loc. Takes into account cells in mine which are required
+    to be dug for given loc, to ensure loc does not put mine into an invalid state.
+    Parameters
+    ----------
+    mine - A Mine instance
+    state - the current state of a mine
+    loc - coordinates in a mine, (x,y,z)
+    prevSeenLocs - Dictionary with keys of locs, (x,y,z), and values of sum of loc and other cells required to get to loc.
+
+    Returns
+    -------
+    The sum and path to dig a cartain loc in current mine state
+    """
     aboveCellCoords = (loc[0], loc[1], loc[2] - 1)  # The cell directly above specifed loc.
     ringCoords = getRingCoords(mine, loc)
 
@@ -552,7 +617,6 @@ def search_rec(mine, state, prevSeenLocs = {}, minePath=[], mineSum=[]):
       '''
 
     #Loop Through each cell in the mine.
-
     try:
         x,y,z = np.where(state==0)
 
@@ -560,31 +624,41 @@ def search_rec(mine, state, prevSeenLocs = {}, minePath=[], mineSum=[]):
         for loc in zip(np.flip(x),np.flip(y),np.flip(z)):
             if state[loc] == 0 and mine.underground[loc] > 0:
 
+                #If loc has been previously calculated use it, otherwise calculate for first time..
                 if loc in prevSeenLocs:
                     s,p = prevSeenLocs[loc]['Sum'], prevSeenLocs[loc]['Path']
                 else:
                     s, p = getParentsSum(mine, state, loc, prevSeenLocs)
                 #end
 
+
+                #If the sum of a loc is greater than 0, it will be worth to dig.
                 if s > 0:
                     mineSum += [s]
 
+                    #Find the difference between the sets, so a cell is not dug multiple times. Only add the diff to
+                    #the final path
                     diff = list(set(p) - (set(p)&set(minePath)))
                     minePath += diff
 
                     # Perform digging action
                     state = mine.results(state, diff, prevSeenLocs)
 
+                    #Recursivally call function to optimize mine, Can ignore first 2 outputs as they are only returing
+                    #values to top function
                     _,_,state = search_rec(mine, np.array(state), minePath=minePath, mineSum=mineSum)
                     break
                 #end
             #end
         #end
+
+    #Saftey Check
     except Exception as e:
         print(e)
         print("No avaliable locations to dig remaining")
     #end
 
+    #Return the values.
     return np.sum(mine.underground * state), minePath, state
 #end
 
@@ -606,7 +680,6 @@ def search_dp_dig_plan(mine):
 
     '''
 
-    # best_payoff, best_action_list, best_final_state  = search_rec(mine, mine.initial)
     best_payoff, best_action_list, best_final_state = search_rec(mine, mine.initial)
 
 
@@ -729,7 +802,7 @@ def find_action_sequence(s0, s1):
 def main():
     # print(my_team())
     #
-    v = np.array([[-1, -1, 10], [-1, 20, 4], [-1, -1, -1]])
+    v = np.array([[-1, -1, -1], [-1, 4, -1], [-1, -10, 11]])
     # vDash = np.array([[-1, -1, 10, 5], [-1, -20, -4, -7], [-1, -1, -1, -21]])
     # # w = np.array([[1, 4], [2, 5], [3, 6]])
     # # x = np.array([[1, 4, 1, 1], [2, 5, 1, 1], [3, 6, 1, -1]])
@@ -738,24 +811,24 @@ def main():
 
     mine = Mine(underground=v, dig_tolerance=1)
 
-    # best_action_list, best_payoff, best_final_state = search_dp_dig_plan(mine)
+    best_action_list, best_payoff, best_final_state = search_dp_dig_plan(mine)
 
-    # print(best_action_list)
-    # print(best_final_state)
-    # print(best_payoff)
+    print(best_action_list)
+    print(best_final_state)
+    print(best_payoff)
 
     # search_bb_dig_plan(mine)
 
 
     #
-    s0 = [[1,0,0], [1,0,0], [0,0,0]]
-    s1 = [[1, 1, 1], [1, 1, 1], [1, 1, 1]]
+    # s0 = [[1,0,0], [1,0,0], [0,0,0]]
+    # s1 = [[1, 1, 1], [1, 1, 1], [1, 1, 1]]
 
     # mine.plot_state(np.array(s1))
 
     # print(mine.is_dangerous(s0))
 
-    print(find_action_sequence(s0,s1))
+    # print(find_action_sequence(s0,s1))
 
 #end
         
