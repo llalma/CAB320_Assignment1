@@ -589,7 +589,7 @@ def search_dp_dig_plan(mine):
     best_payoff, best_action_list, best_final_state = search_rec(mine, mine.initial)
 
 
-    return best_action_list, best_payoff, best_final_state
+    return find_action_sequence(np.zeros_like(best_final_state), best_final_state), best_payoff, best_final_state
 #end
 
 def bbSearch(mine, state, loc=None):
@@ -661,7 +661,7 @@ def find_action_sequence(s0, s1):
     s0 = np.array(s0)
     s1 = np.array(s1)
 
-    outputActionList = set()
+    outputActionList = []
 
     #Convert 2D mines to 3D mines and set flag to convert back.
     if s0.ndim == 2:
@@ -677,16 +677,17 @@ def find_action_sequence(s0, s1):
         for x in range(s0.shape[0]):
             for y in range(s0.shape[1]):
                 loc = (x,y)
-                diff = sum(s1[loc])-sum(s0[loc])
 
-                if diff < minDiff and sum(s0[loc]) < sum(s1[loc]):
-                    minLoc = (loc[0],loc[1],sum(s0[loc]))
-                    minDiff = diff
+                if sum(s0[loc]) < sum(s1[loc]):
+                    if sum(s0[loc]) < minDiff:
+                        minLoc = (loc[0],loc[1],sum(s0[loc]))
+                        minDiff = sum(s0[loc])
+                    #end
                 #end
             #end
         #end
 
-        outputActionList.add(minLoc)
+        outputActionList.append(minLoc)
         s0[minLoc] = 1
     #end
 
@@ -706,7 +707,7 @@ def main():
     #
     #
     #
-    mine = Mine(underground=vDash, dig_tolerance=3)
+    mine = Mine(underground=v, dig_tolerance=1)
 
     best_action_list, best_payoff, best_final_state = search_dp_dig_plan(mine)
 
@@ -714,7 +715,7 @@ def main():
     print(best_final_state)
     print(best_payoff)
 
-    search_bb_dig_plan(mine)
+    # search_bb_dig_plan(mine)
 
 
     #
