@@ -620,8 +620,8 @@ def search_rec(mine, state, prevSeenLocs = {}, minePath=[], mineSum=[]):
     try:
         x,y,z = np.where(state==0)
 
-        #Start at bottom of mine, to remove more cells initially.
-        for loc in zip(np.flip(x),np.flip(y),np.flip(z)):
+        #Go through positions in mine
+        for loc in zip(x,y,z):
             if state[loc] == 0 and mine.underground[loc] > 0:
 
                 #If loc has been previously calculated use it, otherwise calculate for first time..
@@ -630,7 +630,6 @@ def search_rec(mine, state, prevSeenLocs = {}, minePath=[], mineSum=[]):
                 else:
                     s, p = getParentsSum(mine, state, loc, prevSeenLocs)
                 #end
-
 
                 #If the sum of a loc is greater than 0, it will be worth to dig.
                 if s > 0:
