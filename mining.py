@@ -420,14 +420,21 @@ class Mine(search.Problem):
         # convert to np.array in order to use numpy operators
         state = np.array(state)
 
+        # Convert 2D mines to 3D mines and set flag to convert back.
+        if state.ndim == 2:
+            state = np.expand_dims(state, 1)
+        # end
 
+        xCoords = range(self.len_x)
+        yCoords = range(self.len_y)
 
+        vectoredFunction = np.vectorize(self.checkValidLoc, excluded=['state'])
 
-        stateSummed = np.sum(state, axis=2)
+        if False in vectoredFunction(state=state, x=xCoords, y=yCoords):
+            return False
+        #end
 
-
-
-        raise NotImplementedError
+        return True
     #end
 
     def back2D(self, actions, state):
@@ -462,8 +469,25 @@ class Mine(search.Problem):
         return False
     #end
 
+    def checkValidLoc(self, state, x, y):
+        loc = (x,y)
+        neighbours = self.surface_neigbhours(loc)
+
+        locHeight = sum(state[loc])
+
+        #Coverts neighbour coords to heights of neighbours
+        for i,n in enumerate(neighbours):
+            if abs(sum(state[n])-locHeight) > self.dig_tolerance:
+                return False
+            #end
+        #end
+
+        return True
+    #end
+
     # ========================  Class Mine  ==================================
 
+#DP Arroach
 def getRingCoords(mine, loc):
     outputCoords = []
 
@@ -566,7 +590,6 @@ def search_rec(mine, state, prevSeenLocs = {}, minePath=[], mineSum=[]):
     return np.sum(mine.underground * state), minePath, state
 #end
 
-
 def search_dp_dig_plan(mine):
     '''
     Search using Dynamic Programming the most profitable sequence of 
@@ -592,6 +615,8 @@ def search_dp_dig_plan(mine):
     return find_action_sequence(np.zeros_like(best_final_state), best_final_state), best_payoff, best_final_state
 #end
 
+
+#BB Arroach
 def bbSearch(mine, state, loc=None):
     state = np.array(state)
 
@@ -636,6 +661,8 @@ def search_bb_dig_plan(mine):
     raise NotImplementedError
 #end
 
+
+#Extra Function
 def find_action_sequence(s0, s1):
     '''
     Compute a sequence of actions to go from state s0 to state s1.
@@ -699,28 +726,30 @@ def main():
     # print(my_team())
     #
     v = np.array([[-1, -1, 10], [-1, 20, 4], [-1, -1, -1]])
-    vDash = np.array([[-1, -1, 10, 5], [-1, -20, -4, -7], [-1, -1, -1, -21]])
-    # w = np.array([[1, 4], [2, 5], [3, 6]])
-    # x = np.array([[1, 4, 1, 1], [2, 5, 1, 1], [3, 6, 1, -1]])
-    # y = np.array([[1, -6, 1, 1], [2, 5, 1, 1], [3, 6, 1, 1], [3, 6, 1, -10]])
-    # z = np.array([[[1, 4, 1, 1], [2, 5, 1, 1], [3, 6, 1, 1]], x - 1])
-    #
-    #
-    #
+    # vDash = np.array([[-1, -1, 10, 5], [-1, -20, -4, -7], [-1, -1, -1, -21]])
+    # # w = np.array([[1, 4], [2, 5], [3, 6]])
+    # # x = np.array([[1, 4, 1, 1], [2, 5, 1, 1], [3, 6, 1, -1]])
+    # # y = np.array([[1, -6, 1, 1], [2, 5, 1, 1], [3, 6, 1, 1], [3, 6, 1, -10]])
+    # # z = np.array([[[1, 4, 1, 1], [2, 5, 1, 1], [3, 6, 1, 1]], x - 1])
+    # #
+    # #
+    # #
     mine = Mine(underground=v, dig_tolerance=1)
-
-    best_action_list, best_payoff, best_final_state = search_dp_dig_plan(mine)
-
-    print(best_action_list)
-    print(best_final_state)
-    print(best_payoff)
+    #
+    # best_action_list, best_payoff, best_final_state = search_dp_dig_plan(mine)
+    #
+    # print(best_action_list)
+    # print(best_final_state)
+    # print(best_payoff)
 
     # search_bb_dig_plan(mine)
 
 
     #
-    # s0 = [[1,0,0], [0,0,0], [0,0,0]]
-    # s1 = [[1, 1, 1], [1, 0, 0], [0, 0, 0]]
+    s0 = [[1,0,0], [0,0,0], [0,0,0]]
+    s1 = [[1, 1, 1], [1, 0, 0], [0, 0, 0]]
+
+    print(mine.is_dangerous(s1))
 
     # find_action_sequence(s0,s1)
 
