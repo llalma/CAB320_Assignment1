@@ -694,39 +694,33 @@ def find_action_sequence(s0, s1):
         s1 = np.expand_dims(s1, 1)
     #end
 
-    print(s0)
-    print(s1)
 
-    s0Summed = np.sum(s0, axis=2)
-    s1Summed = np.sum(s1, axis=2)
+    while not np.array_equal(s0, s1):
+        s0Summed = np.sum(s0, axis=2)
+        s1Summed = np.sum(s1, axis=2)
 
-    temp = np.where(s0Summed < s1Summed)
-
-    print(s0Summed[temp[0]])
-
-    # while not np.array_equal(s0, s1):
-    #
-    #     minLoc = (-1, -1)
-    #     minDiff = float("Inf")
+        minLoc = (-1, -1)
+        minDiff = float("Inf")
 
 
 
-    #     for x in range(s0.shape[0]):
-    #         for y in range(s0.shape[1]):
-    #             loc = (x,y)
-    #
-    #             if s0Summed[loc] < s1Summed[loc]:
-    #                 if s0Summed[loc] < minDiff:
-    #                     minLoc = (loc[0],loc[1],s0Summed[loc])
-    #                     minDiff = s0Summed[loc]
-    #                 #end
-    #             #end
-    #         #end
-    #     #end
-    #
-    #     outputActionList.append(minLoc)
-    #     s0[minLoc] = 1
-    # #end
+        for x in range(s0.shape[0]):
+            for y in range(s0.shape[1]):
+                loc = (x,y)
+
+                if s0Summed[loc] < s1Summed[loc]:
+                    if s0Summed[loc] < minDiff:
+                        minLoc = (loc[0],loc[1],s0Summed[loc])
+                        minDiff = s0Summed[loc]
+                    #end
+                #end
+            #end
+        #end
+
+        outputActionList.append(minLoc)
+        s0[minLoc] = 1
+    #end
+
 
     return outputActionList
 #end
@@ -741,13 +735,11 @@ def main():
     # # x = np.array([[1, 4, 1, 1], [2, 5, 1, 1], [3, 6, 1, -1]])
     # # y = np.array([[1, -6, 1, 1], [2, 5, 1, 1], [3, 6, 1, 1], [3, 6, 1, -10]])
     # # z = np.array([[[1, 4, 1, 1], [2, 5, 1, 1], [3, 6, 1, 1]], x - 1])
-    # #
-    # #
-    # #
+
     mine = Mine(underground=v, dig_tolerance=1)
-    #
+
     # best_action_list, best_payoff, best_final_state = search_dp_dig_plan(mine)
-    #
+
     # print(best_action_list)
     # print(best_final_state)
     # print(best_payoff)
@@ -756,14 +748,14 @@ def main():
 
 
     #
-    s0 = [[1,0,0], [0,0,0], [0,0,0]]
-    s1 = [[1, 1, 1], [1, 0, 0], [0, 0, 0]]
+    s0 = [[1,0,0], [1,0,0], [0,0,0]]
+    s1 = [[1, 1, 1], [1, 1, 1], [1, 1, 1]]
 
-    mine.plot_state(np.array(s1))
+    # mine.plot_state(np.array(s1))
 
     # print(mine.is_dangerous(s0))
 
-    find_action_sequence(s0,s1)
+    print(find_action_sequence(s0,s1))
 
 #end
         
