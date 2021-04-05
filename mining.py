@@ -411,6 +411,7 @@ class Mine(search.Problem):
         return sum(state * self.underground)
     #end
 
+
     def is_dangerous(self, state):
         '''
         Return True if the given state breaches the dig_tolerance constraints.
@@ -425,16 +426,14 @@ class Mine(search.Problem):
             state = np.expand_dims(state, 1)
         # end
 
+        summedState = np.sum(state, axis=2)
+
         xCoords = range(self.len_x)
         yCoords = range(self.len_y)
 
-        vectoredFunction = np.vectorize(self.checkValidLoc, excluded=['state'])
+        vectoredFunction = np.vectorize(self.compareNeighboursHeights, excluded=['summedState'])
 
-        if False in vectoredFunction(state=state, x=xCoords, y=yCoords):
-            return False
-        #end
-
-        return True
+        return False not in vectoredFunction(summedState=summedState,x=xCoords, y=yCoords)
     #end
 
     def back2D(self, actions, state):
@@ -469,18 +468,17 @@ class Mine(search.Problem):
         return False
     #end
 
-    def checkValidLoc(self, state, x, y):
+    def compareNeighboursHeights(self, summedState, x, y):
         loc = (x,y)
-        neighbours = self.surface_neigbhours(loc)
 
-        locHeight = sum(state[loc])
+        #Returns heights of all neighbours of loc
+        lambdaFunc = lambda nLoc: summedState[nLoc]
+        heightNeighbours = list(map(lambdaFunc, self.surface_neigbhours(loc)))
 
-        #Coverts neighbour coords to heights of neighbours
-        for i,n in enumerate(neighbours):
-            if abs(sum(state[n])-locHeight) > self.dig_tolerance:
-                return False
-            #end
-        #end
+        o = list(map(lambda h: abs(summedState[loc]-h) <= self.dig_tolerance, heightNeighbours))
+
+        if False in o:
+            return False
 
         return True
     #end
@@ -749,7 +747,7 @@ def main():
     s0 = [[1,0,0], [0,0,0], [0,0,0]]
     s1 = [[1, 1, 1], [1, 0, 0], [0, 0, 0]]
 
-    print(mine.is_dangerous(s1))
+    print(mine.is_dangerous(s0))
 
     # find_action_sequence(s0,s1)
 
