@@ -611,6 +611,7 @@ def search_dp_dig_plan(mine):
 
 
     return find_action_sequence(np.zeros_like(best_final_state), best_final_state), best_payoff, best_final_state
+
 #end
 
 
@@ -738,11 +739,11 @@ def main():
 
     mine = Mine(underground=v, dig_tolerance=1)
 
-    # best_action_list, best_payoff, best_final_state = search_dp_dig_plan(mine)
+    best_action_list, best_payoff, best_final_state = search_dp_dig_plan(mine)
 
-    # print(best_action_list)
-    # print(best_final_state)
-    # print(best_payoff)
+    print(best_action_list)
+    print(best_final_state)
+    print(best_payoff)
 
     # search_bb_dig_plan(mine)
 
@@ -753,9 +754,9 @@ def main():
 
     # mine.plot_state(np.array(s1))
 
-    # print(mine.is_dangerous(s0))
+    print(mine.is_dangerous(s0))
 
-    print(find_action_sequence(s0,s1))
+    # print(find_action_sequence(s0,s1))
 
 #end
         

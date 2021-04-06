@@ -3,12 +3,13 @@ import random as rand
 import numpy as np
 import time
 
+
 def test1():
-    #Test for runtime, can handle 15x15x15 in less than a minute
+    # Test for runtime, can handle 15x15x15 in less than a minute
     np.random.seed(0)
     f = 8
 
-    array = np.random.randint(-10,10,(f,f,f))
+    array = np.random.randint(-10, 10, (f, f, f))
 
     start = time.time()
     mine = mining.Mine(underground=array)
@@ -18,9 +19,10 @@ def test1():
     print(best_action_list)
     print(best_final_state)
 
-    print("RunTime = " + str(time.time()-start))
+    print("RunTime = " + str(time.time() - start))
 
-#end
+
+# end
 
 def test2():
     input = np.array([[-1, -1, 10], [-1, 20, 4], [-1, -1, -1]])
@@ -32,18 +34,37 @@ def test2():
 
     expectedSum = 30
     expectedPath = [(1, 0), (1, 1), (2, 0), (0, 0), (1, 2), (0, 1), (0, 2)]
-    expectedState = [[1, 1, 1],[1, 1, 1],[1, 0, 0]]
+    expectedState = [[1, 1, 1], [1, 1, 1], [1, 0, 0]]
 
     assert expectedSum == actualSum
     assert np.array_equal(expectedPath, actualPath)
     assert np.array_equal(expectedState, actualState)
-#end
+
+
+# end
+
+def test3():
+
+    input = np.array([[-1, -1, 10], [-1, 20, 4], [-1, -1, -1]])
+    mine = mining.Mine(input)
+
+    loc = (1,0)
+    actualNeighbours  = mining.Mine.surface_neigbhours(mine, loc)
+
+    expectedNeighbours = [(0, 0), (2, 0)]
+    assert expectedNeighbours == actualNeighbours
+
+
+# end
 
 def main():
-    test1()
+    # test1()
     # test2()
-#end
+    test3()
+
+
+# end
 
 if __name__ == "__main__":
     main()
-#end
+# end
