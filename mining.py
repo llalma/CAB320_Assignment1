@@ -181,7 +181,7 @@ class Mine(search.Problem):
         '''
         # super().__init__() # call to parent class constructor not needed
         
-        self.underground = underground 
+        self.underground = underground
         # self.underground  should be considered as a 'read-only' variable!
         self.dig_tolerance = dig_tolerance
 
@@ -581,10 +581,11 @@ def getParentsSum(mine, state, loc, prevSeenLocs):
         return prevSeenLocs[loc]["Sum"], prevSeenLocs[loc]["Path"]
     #end
 
+    if loc == (4, 0, 1):
+        print("")
+
     #To get loc cell value, need to add cell directly above and cells in ring shape around it. more specific in report
     for coords in [aboveCellCoords] + ringCoords:
-        if coords == (2, 0, 0):
-            print("")
         if mine.validCoords(coords) and state[coords] == 0:
             tempSum, tempPath = getParentsSum(mine,state,coords,prevSeenLocs)
             outputSum += tempSum
@@ -622,27 +623,50 @@ def search_rec(mine, state, prevSeenLocs = {}, minePath=[], mineSum=[]):
 
     #Loop Through each cell in the mine.
     try:
-        x,y,z = np.where(state==0)
+        x,y,z = np.where((state==0) & (mine.underground>0))
 
         #Go through positions in mine
         for loc in zip(x,y,z):
+            # print(loc)
+            # print(mine.underground[loc])
+            # print(state[loc])
+
             if state[loc] == 0 and mine.underground[loc] > 0:
+
+                # print(mine.underground[loc])
+                # if loc == (4,0,1):
+                #     print("")
 
                 #If loc has been previously calculated use it, otherwise calculate for first time..
                 if loc in prevSeenLocs:
                     s,p = prevSeenLocs[loc]['Sum'], prevSeenLocs[loc]['Path']
+
+                    for pathLoc in p:
+                        if pathLoc in minePath:
+                            s -= mine.underground[pathLoc]
+                        #end
+                    #end
+
+                    # print(set(p) & set(minePath))
+                    # for pathLoc in set(p) & set(minePath):
+                    #     s -= mine.underground[pathLoc]
+                    #     p.remove(pathLoc)
+                    # #end
                 else:
                     s, p = getParentsSum(mine, state, loc, prevSeenLocs)
                 #end
+
+
 
                 #If the sum of a loc is greater than 0, it will be worth to dig.
                 if s > 0:
                     mineSum += [s]
 
-                    #Find the difference between the sets, so a cell is not dug multiple times. Only add the diff to
-                    #the final path
-                    diff = list(set(p) - (set(p)&set(minePath)))
+                    # Find the difference between the sets, so a cell is not dug multiple times. Only add the diff to
+                    # the final path
+                    diff = list(set(p) - (set(p) & set(minePath)))
                     minePath += diff
+
 
                     # Perform digging action
                     state = mine.results(state, diff, prevSeenLocs)
@@ -685,8 +709,7 @@ def search_dp_dig_plan(mine):
 
     best_payoff, best_action_list, best_final_state = search_rec(mine, mine.initial)
 
-
-    return find_action_sequence(np.zeros_like(best_final_state), best_final_state), best_payoff, best_final_state
+    return best_payoff, find_action_sequence(np.zeros_like(best_final_state), best_final_state), np.sum(best_final_state, axis=2)
 #end
 
 
@@ -758,6 +781,8 @@ def find_action_sequence(s0, s1):
     # approach: among all columns for which s0 < s1, pick the column loc
     # with the smallest s0[loc]
 
+    flag = False
+
     #Convert both states to numpy array.
     s0 = np.array(s0)
     s1 = np.array(s1)
@@ -768,38 +793,51 @@ def find_action_sequence(s0, s1):
     if s0.ndim == 2:
         s0 = np.expand_dims(s0, 1)
         s1 = np.expand_dims(s1, 1)
+        flag = True
     #end
-
 
     while not np.array_equal(s0, s1):
-        s0Summed = np.sum(s0, axis=2)
-        s1Summed = np.sum(s1, axis=2)
+        #s0 < s1
+        x,y = np.where(np.sum(s0,2) < np.sum(s1,2))
+        locs = list(zip(x,y))
 
-        minLoc = (-1, -1)
-        minDiff = float("Inf")
+        #Get smallest s0[loc
+        vals = list(map(lambda loc: sum(s0[loc]),locs))
 
+        loc = locs[vals.index(min(vals))]
+        loc = (loc[0], loc[1], int(sum(s0[loc])))
 
-
-        for x in range(s0.shape[0]):
-            for y in range(s0.shape[1]):
-                loc = (x,y)
-
-                if s0Summed[loc] < s1Summed[loc]:
-                    if s0Summed[loc] < minDiff:
-                        minLoc = (loc[0],loc[1],s0Summed[loc])
-                        minDiff = s0Summed[loc]
-                    #end
-                #end
-            #end
-        #end
-
-        outputActionList.append(minLoc)
-        s0[minLoc] = 1
+        outputActionList.append(loc)
+        s0[loc] = 1
     #end
-
 
     return outputActionList
 #end
+
+def back2D(actions, state):
+    """
+    Converts 3D locations and arrays, as converted in the Mine.init, back to 2D.
+
+    Parameters
+    ----------
+    actions
+    state
+
+    Returns
+    -------
+    actions, state
+    """
+
+    #Check if the 2D flag has been set. If it has remove the dimension that was added initially
+    #and return actions and state
+    for i, a in enumerate(np.array(actions)):
+        actions[i] = tuple(a[[0, 2]])
+    # end
+    state = np.squeeze(state)
+
+    return actions, state
+#end
+
 
 
 def main():
