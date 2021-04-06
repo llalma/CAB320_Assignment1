@@ -452,26 +452,26 @@ class Mine(search.Problem):
 
         #XAxis, Left and Right in array
         if not self.checkShiftedArrays(summedState[:-1, :], summedState[1:, :]):
-            return False
+            return True
         #end
 
         #YAxis, Up and Down in array
         if not self.checkShiftedArrays(summedState[:, :-1], summedState[:, 1:]):
-            return False
+            return True
         #end
 
         # TopLeft 2 BottomRight, top left and bottom right of any given cell
         if not self.checkShiftedArrays(summedState[:-1, :-1], summedState[1:, 1:]):
-            return False
+            return True
         # end
 
         # TopRight 2 BottomLeft, top right and bottom left of any given cell
         if not self.checkShiftedArrays(summedState[:-1, 1:], summedState[1:, :-1]):
-            return False
+            return True
         # end
 
         #If here, array is valid.
-        return True
+        return False
     #end
 
     def back2D(self, actions, state):
@@ -827,14 +827,14 @@ def main():
     s0 = [[1,0,0], [1,0,0], [0,0,0]]
     s1 = [[1, 1, 0, 0], [1, 1, 0,0], [1, 1, 1,0], [1,1,1,1]]
 
-    s2_1 = [[1, 0, 0, 0], [1, 1, 0, 0], [1, 1, 1, 0], [1, 1, 1, 1]]
-    s2_2 = [[1, 1, 0, 0], [1, 0, 0, 0], [1, 1, 1, 1], [1, 1, 0, 0]]
-    s2_3 = [[1, 1, 1, 1], [0, 0, 0, 0], [1, 0, 0, 0], [0, 0, 0, 0]]
+    s2_1 = [[1, 1, 1, 0], [1, 1, 1, 0], [1, 1, 0, 0], [1, 1, 0, 0]]
+    s2_2 = [[1, 1, 1, 0], [1, 1, 0, 0], [1, 1, 0, 0], [1, 1, 0, 0]]
+    s2_3 = [[1, 1, 1, 0], [1, 1, 0, 0], [0, 0, 0, 0], [1, 1, 0, 0]]
     s2 = [s2_1, s2_2, s2_3]
 
     # mine.plot_state(np.array(s1))
 
-    print(mine.is_dangerous(s2))
+    print(mine.is_dangerous(s0))
 
     # print(find_action_sequence(s0,s1))
 
