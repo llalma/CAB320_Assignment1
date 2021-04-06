@@ -117,7 +117,11 @@ def convert_to_list(a):
         return [list(r) for r in a]
     #end
 
-
+class NonMatchingShapes(Exception):
+    """
+    Expection for "checkShiftedArrays" function, raised if input shapes are not same dimensions.
+    """
+    pass
 
 
 class Mine(search.Problem):
@@ -407,6 +411,28 @@ class Mine(search.Problem):
         return sum(state * self.underground)
     #end
 
+    def checkShiftedArrays(self, data1, data2):
+        """
+        Both input parameters must be same shape.
+        Find abs difference between each input and compare to dig tolerance.
+        Parameters
+        ----------
+        data1 - x*y array of depth values
+        data2 - x*y array of depth values
+
+        Returns
+        -------
+        Boolean, True if neighbours are valid.
+        """
+
+        if data1.shape == data2.shape:
+            if False in np.where(abs(data1 - data2) <= self.dig_tolerance, True, False):
+                return False
+            return True
+        else:
+            raise NonMatchingShapes("Data1 and Data2 are not same shape.")
+    #end
+
     def is_dangerous(self, state):
         '''
         Return True if the given state breaches the dig_tolerance constraints.
@@ -421,19 +447,31 @@ class Mine(search.Problem):
             state = np.expand_dims(state, 1)
         # end
 
-        #Height map of mine, by summing mine along Z axis.
+        #Get depth values of entire array.
         summedState = np.sum(state, axis=2)
 
-        #Valid x and y coords, to be passed to vectorized function, which is why is not a list of coords
-        xCoords = range(self.len_x)
-        yCoords = range(self.len_y)
+        #XAxis, Left and Right in array
+        if not self.checkShiftedArrays(summedState[:-1, :], summedState[1:, :]):
+            return False
+        #end
 
-        #Vectorize the compareNeighboursHeights and make summedState not be vectorized when called with function.
-        #Uses vectorization to avoid loops.
-        vectoredFunction = np.vectorize(self.compareNeighboursHeights, excluded=['summedState'])
+        #YAxis, Up and Down in array
+        if not self.checkShiftedArrays(summedState[:, :-1], summedState[:, 1:]):
+            return False
+        #end
 
-        #Call the vectorize function and flip the returned result. False == mine is invalid, True == mine if valid.
-        return False not in vectoredFunction(summedState=summedState,x=xCoords, y=yCoords)
+        # TopLeft 2 BottomRight, top left and bottom right of any given cell
+        if not self.checkShiftedArrays(summedState[:-1, :-1], summedState[1:, 1:]):
+            return False
+        # end
+
+        # TopRight 2 BottomLeft, top right and bottom left of any given cell
+        if not self.checkShiftedArrays(summedState[:-1, 1:], summedState[1:, :-1]):
+            return False
+        # end
+
+        #If here, array is valid.
+        return True
     #end
 
     def back2D(self, actions, state):
@@ -478,40 +516,6 @@ class Mine(search.Problem):
             return True
         #end
         return False
-    #end
-
-    def compareNeighboursHeights(self, summedState, x, y):
-        """
-        Compares a cells height to its neighbour cell heights. Checks if the state of the mine is valid. Is verctorised
-        in "is_dangerous" to remove the use of loops.
-
-        Parameters
-        ----------
-        summedState - The summation of a state along the Z axis, represents the depth of each coloumn.
-        x - a list of X coordinates, ranging from 0 to len_x
-        y - a list of Y coordinates, ranging from 0 to len_y
-
-        Returns
-        -------
-            Returns x*y array of booleans, each cell represents if a cell is valid or invalid, valid == true.
-        """
-
-        #Put x and y into tuple of (x,y) for coords
-        loc = (x,y)
-
-        #Returns heights of all neighbours of loc
-        lambdaFunc = lambda nLoc: summedState[nLoc]
-        heightNeighbours = list(map(lambdaFunc, self.surface_neigbhours(loc)))
-
-        #Check each loc height to each of its neighbours, if a locaiton is <= to dig tolerance returns true.
-        check = list(map(lambda h: abs(summedState[loc]-h) <= self.dig_tolerance, heightNeighbours))
-
-        #If check contains a false, meaning one of the neighbours makes a cell invalid, return false.
-        if False in check:
-            return False
-
-        #Default value if every surface cell in mine is valid.
-        return True
     #end
 
     # ========================  Class Mine  ==================================
@@ -687,7 +691,7 @@ def search_dp_dig_plan(mine):
 
 
 #BB Arroach
-def bbSearch(mine, state, loc=None):
+def bbSearch(mine, state, loc=None, skipCol=None):
     state = np.array(state)
 
     gen = mine.actions(state)
@@ -804,28 +808,33 @@ def main():
     v = np.array([[-1, -1, -1], [-1, 4, -1], [-1, -10, 11]])
     # vDash = np.array([[-1, -1, 10, 5], [-1, -20, -4, -7], [-1, -1, -1, -21]])
     # # w = np.array([[1, 4], [2, 5], [3, 6]])
-    # # x = np.array([[1, 4, 1, 1], [2, 5, 1, 1], [3, 6, 1, -1]])
-    # # y = np.array([[1, -6, 1, 1], [2, 5, 1, 1], [3, 6, 1, 1], [3, 6, 1, -10]])
-    # # z = np.array([[[1, 4, 1, 1], [2, 5, 1, 1], [3, 6, 1, 1]], x - 1])
+    x = np.array([[1, 4, 1, 1], [2, 5, 1, 1], [3, 6, 1, -1]])
+    # y = np.array([[1, -6, 1, 1], [2, 5, 1, 1], [3, 6, 1, 1], [3, 6, 1, -10]])
+    z = np.array([[[1, 4, 1, 1], [2, 5, 1, 1], [3, 6, 1, 1]], x - 1])
 
     mine = Mine(underground=v, dig_tolerance=1)
-
-    best_action_list, best_payoff, best_final_state = search_dp_dig_plan(mine)
-
-    print(best_action_list)
-    print(best_final_state)
-    print(best_payoff)
+    #
+    # best_action_list, best_payoff, best_final_state = search_dp_dig_plan(mine)
+    #
+    # print(best_action_list)
+    # print(best_final_state)
+    # print(best_payoff)
 
     # search_bb_dig_plan(mine)
 
 
     #
-    # s0 = [[1,0,0], [1,0,0], [0,0,0]]
-    # s1 = [[1, 1, 1], [1, 1, 1], [1, 1, 1]]
+    s0 = [[1,0,0], [1,0,0], [0,0,0]]
+    s1 = [[1, 1, 0, 0], [1, 1, 0,0], [1, 1, 1,0], [1,1,1,1]]
+
+    s2_1 = [[1, 0, 0, 0], [1, 1, 0, 0], [1, 1, 1, 0], [1, 1, 1, 1]]
+    s2_2 = [[1, 1, 0, 0], [1, 0, 0, 0], [1, 1, 1, 1], [1, 1, 0, 0]]
+    s2_3 = [[1, 1, 1, 1], [0, 0, 0, 0], [1, 0, 0, 0], [0, 0, 0, 0]]
+    s2 = [s2_1, s2_2, s2_3]
 
     # mine.plot_state(np.array(s1))
 
-    # print(mine.is_dangerous(s0))
+    print(mine.is_dangerous(s2))
 
     # print(find_action_sequence(s0,s1))
 
