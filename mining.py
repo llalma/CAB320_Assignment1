@@ -596,7 +596,7 @@ def getParentsSum(mine, state, loc, prevSeenLocs):
     return outputSum, outputPath
 #end
 
-def search_rec(mine, state, prevSeenLocs = {}, minePath=[], mineSum=[]):
+def searchRec(mine, state, prevSeenLocs = {}, minePath=[], mineSum=[]):
     '''
       Recursive search function for search_dp_dig_plan,
 
@@ -625,51 +625,42 @@ def search_rec(mine, state, prevSeenLocs = {}, minePath=[], mineSum=[]):
         tuples = sorted(zip(x,y,z), key=lambda x: x[-1])
         #Go through positions in mine
         for loc in tuples:
-            # print(loc)
-            # print(mine.underground[loc])
-            # print(state[loc])
 
-            if state[loc] == 0 and mine.underground[loc] > 0:
+            #If loc has been previously calculated use it, otherwise calculate for first time..
+            if loc in prevSeenLocs:
+                s,p = prevSeenLocs[loc]['Sum'], prevSeenLocs[loc]['Path']
 
-                # print(mine.underground[loc])
-                # if loc == (4,0,1):
-                #     print("")
-
-                #If loc has been previously calculated use it, otherwise calculate for first time..
-                if loc in prevSeenLocs:
-                    s,p = prevSeenLocs[loc]['Sum'], prevSeenLocs[loc]['Path']
-
-                    for pathLoc in p:
-                        if pathLoc in minePath:
-                            s -= mine.underground[pathLoc]
-                        #end
-                    #end
-
-                else:
-                    s, p = getParentsSum(mine, state, loc, prevSeenLocs)
+                for minedLoc in set(p) & set(minePath):
+                    s -= mine.underground[minedLoc]
                 #end
+                # for pathLoc in p:
+                #     if pathLoc in minePath:
+                #         s -= mine.underground[pathLoc]
+                #     #end
+                # #end
 
-                #If the sum of a loc is greater than 0, it will be worth to dig.
-                if s > 0:
-                    mineSum += [s]
+            else:
+                s, p = getParentsSum(mine, state, loc, prevSeenLocs)
+            #end
 
-                    # Find the difference between the sets, so a cell is not dug multiple times. Only add the diff to
-                    # the final path
-                    diff = list(set(p) - (set(p) & set(minePath)))
-                    minePath += diff
+            #If the sum of a loc is greater than 0, it will be worth to dig.
+            if s > 0:
+                mineSum += [s]
+
+                # Find the difference between the sets, so a cell is not dug multiple times. Only add the diff to
+                # the final path
+                p = list(set(p) - (set(p) & set(minePath)))
+                minePath += p
 
 
-                    # Perform digging action
-                    state = mine.results(state, diff, prevSeenLocs)
 
-                    #Recursivally call function to optimize mine, Can ignore first 2 outputs as they are only returing
-                    #values to top function
+                # Perform digging action
+                state = mine.results(state, p, prevSeenLocs)
 
-                    #((2, 1, 1, 1), (1, 1, 0, 1), (0, 0, 0, 1))
-                    stateSummed = np.sum(state, axis=2)
-                    _,_,state = search_rec(mine, np.array(state), minePath=minePath, mineSum=mineSum)
-                    break
-                #end
+                #Recursivally call function to optimize mine, Can ignore first 2 outputs as they are only returing
+                #values to top function
+                _,_,state = searchRec(mine, np.array(state), minePath=minePath, mineSum=mineSum)
+                break
             #end
         #end
 
@@ -701,7 +692,7 @@ def search_dp_dig_plan(mine):
 
     '''
 
-    best_payoff, best_action_list, best_final_state = search_rec(mine, mine.initial)
+    best_payoff, best_action_list, best_final_state = searchRec(mine, mine.initial)
 
     return best_payoff, find_action_sequence(np.zeros_like(best_final_state), best_final_state), np.sum(best_final_state, axis=2)
 #end
