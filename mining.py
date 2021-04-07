@@ -581,9 +581,6 @@ def getParentsSum(mine, state, loc, prevSeenLocs):
         return prevSeenLocs[loc]["Sum"], prevSeenLocs[loc]["Path"]
     #end
 
-    if loc == (4, 0, 1):
-        print("")
-
     #To get loc cell value, need to add cell directly above and cells in ring shape around it. more specific in report
     for coords in [aboveCellCoords] + ringCoords:
         if mine.validCoords(coords) and state[coords] == 0:
@@ -625,8 +622,9 @@ def search_rec(mine, state, prevSeenLocs = {}, minePath=[], mineSum=[]):
     try:
         x,y,z = np.where((state==0) & (mine.underground>0))
 
+        tuples = sorted(zip(x,y,z), key=lambda x: x[-1])
         #Go through positions in mine
-        for loc in zip(x,y,z):
+        for loc in tuples:
             # print(loc)
             # print(mine.underground[loc])
             # print(state[loc])
@@ -647,16 +645,9 @@ def search_rec(mine, state, prevSeenLocs = {}, minePath=[], mineSum=[]):
                         #end
                     #end
 
-                    # print(set(p) & set(minePath))
-                    # for pathLoc in set(p) & set(minePath):
-                    #     s -= mine.underground[pathLoc]
-                    #     p.remove(pathLoc)
-                    # #end
                 else:
                     s, p = getParentsSum(mine, state, loc, prevSeenLocs)
                 #end
-
-
 
                 #If the sum of a loc is greater than 0, it will be worth to dig.
                 if s > 0:
@@ -673,6 +664,9 @@ def search_rec(mine, state, prevSeenLocs = {}, minePath=[], mineSum=[]):
 
                     #Recursivally call function to optimize mine, Can ignore first 2 outputs as they are only returing
                     #values to top function
+
+                    #((2, 1, 1, 1), (1, 1, 0, 1), (0, 0, 0, 1))
+                    stateSummed = np.sum(state, axis=2)
                     _,_,state = search_rec(mine, np.array(state), minePath=minePath, mineSum=mineSum)
                     break
                 #end
