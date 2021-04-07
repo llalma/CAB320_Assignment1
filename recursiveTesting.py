@@ -43,7 +43,7 @@ def test2():
 
 # end
 
-def test3():
+def surface_neigbhours2DTest():
 
     input = np.array([[-1, -1, 10], [-1, 20, 4], [-1, -1, -1]])
     mine = mining.Mine(input)
@@ -53,6 +53,31 @@ def test3():
 
     expectedNeighbours = [(0, 0), (2, 0)]
     assert expectedNeighbours == actualNeighbours
+# end
+
+def surface_neigbhours3DTest():
+
+    x = np.array([[1, 4, 1, 1], [2, 5, 1, 1], [3, 6, 1, -1]])
+    input = np.array([[[1, 4, 1, 1], [2, 5, 1, 1], [3, 6, 1, 1]], x - 1])
+    mine = mining.Mine(input)
+
+    loc = (1,1)
+    actualNeighbours  = mining.Mine.surface_neigbhours(mine, loc)
+    expectedNeighbours = [(0, 0), (0, 1), (0, 2), (1, 0), (1, 2)]
+    assert expectedNeighbours == actualNeighbours
+# end
+
+def actions2DTest():
+    input = np.array([[-1, -1, 10], [-1, 20, 4], [-1, -1, -1]])
+    mine = mining.Mine(input)
+
+    state = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
+    actualActions = mining.Mine.actions(mine, state)
+    for child in actualActions:
+        print(next(child))
+    # expectedActions = [(0, 0), (2, 0)]
+    # assert actualActions == expectedActions
+
 
 
 # end
@@ -60,9 +85,9 @@ def test3():
 def main():
     # test1()
     # test2()
-    test3()
-
-
+    # surface_neigbhours2DTest()
+    # surface_neigbhours3DTest()
+    actions2DTest()
 # end
 
 if __name__ == "__main__":

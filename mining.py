@@ -739,7 +739,7 @@ def main():
 
     mine = Mine(underground=v, dig_tolerance=1)
 
-    best_action_list, best_payoff, best_final_state = search_dp_dig_plan(mine)
+    best_action_list, best_payoff, best_final_state = search_bb_dig_plan(mine)
 
     print(best_action_list)
     print(best_final_state)
