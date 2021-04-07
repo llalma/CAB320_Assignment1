@@ -630,6 +630,9 @@ def searchRec(mine, state, prevSeenLocs = {}, minePath=[], mineSum=[]):
             if loc in prevSeenLocs:
                 s,p = prevSeenLocs[loc]['Sum'], prevSeenLocs[loc]['Path']
 
+                """
+                Need to test this further, it works with test data
+                """
                 for minedLoc in set(p) & set(minePath):
                     s -= mine.underground[minedLoc]
                 #end
