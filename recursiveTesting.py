@@ -72,11 +72,24 @@ def actions2DTest():
     mine = mining.Mine(input)
 
     state = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
-    actualActions = mining.Mine.actions(mine, state)
+
+    actualActions = mine.actions( state)
     for child in actualActions:
         print(next(child))
     # expectedActions = [(0, 0), (2, 0)]
     # assert actualActions == expectedActions
+
+def actions3DTest():
+        x = np.array([[1, 4, 1, 1], [2, 5, 1, 1], [3, 6, 1, -1]])
+        input = np.array([[[1, 4, 1, 1], [2, 5, 1, 1], [3, 6, 1, 1]], x - 1])
+        mine = mining.Mine(input)
+
+        state = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
+        actualActions = mine.actions(mine, state)
+        for child in actualActions:
+            print(next(child))
+        # expectedActions = [(0, 0), (2, 0)]
+        # assert actualActions == expectedActions
 
 
 
