@@ -5,10 +5,10 @@ Created on Wed Feb  3 17:56:47 2021
 
 @author: frederic
 
-    
-class problem with     
 
-An open-pit mine is a grid represented with a 2D or 3D numpy array. 
+class problem with
+
+An open-pit mine is a grid represented with a 2D or 3D numpy array.
 
 The first coordinates are surface locations.
 
@@ -16,8 +16,8 @@ In the 2D case, the coordinates are (x,z).
 In the 3D case, the coordinates are (x,y,z).
 The last coordinate 'z' points down.
 
-    
-A state indicates for each surface location  how many cells 
+
+A state indicates for each surface location  how many cells
 have been dug in this pit column.
 
 For a 3D mine, a surface location is represented with a tuple (x,y).
@@ -56,11 +56,11 @@ def my_team():
     return [(9960392,'Liam','Hulsman-Benson'), (10077413, 'Alexander', 'Farrall')]
 #end
 
-    
+
 def convert_to_tuple(a):
     '''
     Convert the parameter 'a' into a nested tuple of the same shape as 'a'.
-    
+
     The parameter 'a' must be array-like. That is, its elements are indexed.
 
     Parameters
@@ -86,11 +86,11 @@ def convert_to_tuple(a):
         # 'a' must be a nested list with 2 levels (a matrix)
         return tuple(tuple(r) for r in a)
     #end
-    
-    
+
+
 def convert_to_list(a):
     '''
-    Convert the array-like parameter 'a' into a nested list of the same 
+    Convert the array-like parameter 'a' into a nested list of the same
     shape as 'a'.
 
     Parameters
@@ -126,51 +126,51 @@ class NonMatchingShapes(Exception):
 
 class Mine(search.Problem):
     '''
-    
-    Mine represent an open mine problem defined by a grid of cells 
+
+    Mine represent an open mine problem defined by a grid of cells
     of various values. The grid is called 'underground'. It can be
     a 2D or 3D array.
-    
+
     The z direction is pointing down, the x and y directions are surface
     directions.
-    
-    An instance of a Mine is characterized by 
+
+    An instance of a Mine is characterized by
     - self.underground : the ndarray that contains the values of the grid cells
-    - self.dig_tolerance : the maximum depth difference allowed between 
-                           adjacent columns 
-    
+    - self.dig_tolerance : the maximum depth difference allowed between
+                           adjacent columns
+
     Other attributes:
         self.len_x, self.len_y, self.len_z : int : underground.shape
-        self.cumsum_mine : float array : cumulative sums of the columns of the 
+        self.cumsum_mine : float array : cumulative sums of the columns of the
                                          mine
-    
+
     A state has the same dimension as the surface of the mine.
     If the mine is 2D, the state is 1D.
     If the mine is 3D, the state is 2D.
-    
+
     state[loc] is zero if digging has not started at location loc.
     More generally, state[loc] is the z-index of the first cell that has
     not been dug in column loc. This number is also the number of cells that
     have been dugged in the column.
-    
+
     States must be tuple-based.
-    
-    '''    
-    
+
+    '''
+
     def __init__(self, underground, dig_tolerance = 1):
         '''
         Constructor
-        
+
         Initialize the attributes
         self.underground, self.dig_tolerance, self.len_x, self.len_y, self.len_z,
         self.cumsum_mine, and self.initial
-        
+
         The state self.initial is a filled with zeros.
 
         Parameters
         ----------
         underground : np.array
-            2D or 3D. Each element of the array contains 
+            2D or 3D. Each element of the array contains
             the profit value of the corresponding cell.
         dig_tolerance : int
              Mine attribute (see class header comment)
@@ -180,7 +180,7 @@ class Mine(search.Problem):
 
         '''
         # super().__init__() # call to parent class constructor not needed
-        
+
         self.underground = underground
         # self.underground  should be considered as a 'read-only' variable!
         self.dig_tolerance = dig_tolerance
@@ -269,7 +269,7 @@ class Mine(search.Problem):
 
         Parameters
         ----------
-        state : 
+        state :
             represented with nested lists, tuples or a ndarray
             state of the partially dug mine
 
@@ -277,7 +277,7 @@ class Mine(search.Problem):
         -------
         a generator of valid actions
 
-        '''        
+        '''
         state = np.array(state)
 
         ####################
@@ -290,7 +290,8 @@ class Mine(search.Problem):
                 for neighbour in self.surface_neigbhours((x,y)):
                     g = self.getDepth(state, (x,y))
                     h = self.getDepth(state, neighbour)
-                    if abs(self.getDepth(state, (x,y)) - self.getDepth(state, neighbour)) <= self.dig_tolerance and self.getDepth(state, (x,y)) < self.len_z:
+                    diff = self.getDepth(state, (x,y)) - self.getDepth(state, neighbour)
+                    if abs(diff) <= self.dig_tolerance and self.getDepth(state, (x,y)) < self.len_z and diff <= 0:
                         validCheck = True
                     else:
                         validCheck = False
@@ -314,7 +315,7 @@ class Mine(search.Problem):
         return convert_to_tuple(new_state)
     #end
 
-    def results(self, state, actions, prevSeenLocs):
+    def results(self, state, actions, prevSeenLocs=None):
         """Return the state that results from executing the given
         actions in the given state. The action must a valid actions.
         That is, one of those generated by  self.actions(state)."""
@@ -323,9 +324,11 @@ class Mine(search.Problem):
         for action in actions:
             new_state[action] += 1
 
-            #Remove it from dict as it will never be used again
-            if action in prevSeenLocs:
-                del prevSeenLocs[action]
+            if prevSeenLocs != None:
+                #Remove it from dict as it will never be used again
+                if action in prevSeenLocs:
+                    del prevSeenLocs[action]
+                #end
             #end
         #end
         return new_state
@@ -350,7 +353,7 @@ class Mine(search.Problem):
         #end
         print(self.__str__())
     #end
-        
+
     def __str__(self):
         if self.underground.ndim == 2:
             # 2D mine
@@ -360,14 +363,14 @@ class Mine(search.Problem):
             # level by level representation
             return '\n'.join('level {}\n'.format(z)
                    +str(self.underground[...,z]) for z in range(self.len_z))
-                    
-                        
-                
+
+
+
             return self.underground[loc[0], loc[1],:]
         #end
     #end
-    
-    @staticmethod   
+
+    @staticmethod
     def plot_state(state):
         if state.ndim==1:
             fig, ax = plt.subplots()
@@ -383,7 +386,7 @@ class Mine(search.Problem):
             _x = np.arange(state.shape[0])
             _y = np.arange(state.shape[1])
             _yy, _xx = np.meshgrid(_y, _x) # cols, rows
-            x, y = _xx.ravel(), _yy.ravel()            
+            x, y = _xx.ravel(), _yy.ravel()
             top = state.ravel()
             bottom = np.zeros_like(top)
             width = depth = 1
@@ -402,8 +405,8 @@ class Mine(search.Problem):
         '''
         Compute and return the payoff for the given state.
         That is, the sum of the values of all the digged cells.
-        
-        No loops needed in the implementation!        
+
+        No loops needed in the implementation!
         '''
         # convert to np.array in order to use tuple addressing
         # state[loc]   where loc is a tuple
@@ -436,7 +439,7 @@ class Mine(search.Problem):
     def is_dangerous(self, state):
         '''
         Return True if the given state breaches the dig_tolerance constraints.
-        
+
         No loops needed in the implementation!
         '''
         # convert to np.array in order to use numpy operators
@@ -679,11 +682,11 @@ def searchRec(mine, state, prevSeenLocs = {}, minePath=[], mineSum=[]):
 
 def search_dp_dig_plan(mine):
     '''
-    Search using Dynamic Programming the most profitable sequence of 
+    Search using Dynamic Programming the most profitable sequence of
     digging actions from the initial state of the mine.
-    
+
     Return the sequence of actions, the final state and the payoff
-    
+
 
     Parameters
     ----------
@@ -702,33 +705,41 @@ def search_dp_dig_plan(mine):
 
 
 #BB Arroach
-def bbSearch(mine, state, loc=None, skipCol=None):
+def bbSearch(mine, state, bestPath, bestState, bestSum=0):
+    bestChildSum = 0
+    bestChildPath = set()
+
     state = np.array(state)
-
     gen = mine.actions(state)
-    childMax = 0
-
     for child in gen:
 
         child = (child[0], child[1], sum(state[child]))
-        if loc != None:
-            tempChildSum = bbSearch(mine, mine.result(state, child), child) + mine.underground[loc]
-        else:
-            tempChildSum = bbSearch(mine, mine.result(state, child), child)
-        #end
+        tempSum, bestPath, bestState = bbSearch(mine, mine.result(state, child), bestPath, bestState, bestSum + mine.underground[child])
 
-        if tempChildSum > childMax:
-            childMax = tempChildSum
+        if tempSum > bestChildSum:
+            bestChildSum = tempSum
+            bestChildPath.add(child)
         #end
+    # end
+
+    if bestChildSum == 12:
+        print("")
     #end
-    return childMax
+
+    if bestChildSum > bestSum:
+        bestSum = bestChildSum
+        bestPath = bestPath.union(bestChildPath)
+        bestState = np.bitwise_or(np.array(state), np.array(bestState))
+    #end
+
+    return bestSum, bestPath, bestState
 #end
 
 def search_bb_dig_plan(mine):
     '''
-    Compute, using Branch and Bound, the most profitable sequence of 
+    Compute, using Branch and Bound, the most profitable sequence of
     digging actions from the initial state of the mine.
-        
+
 
     Parameters
     ----------
@@ -741,8 +752,30 @@ def search_bb_dig_plan(mine):
 
     '''
 
-    print(bbSearch(mine, mine.initial))
-    
+    totalSum = 0
+    totalPath = set()
+    state = mine.initial
+
+    bestPath = set()
+    bestState = state.copy()
+
+    while 1:
+        bestVal, bestPath, _ = bbSearch(mine, state, bestPath, bestState)
+
+        #Stop looping as best found value is not worth digging
+        if bestVal <= 0:
+            break
+        #end
+
+        totalSum += bestVal
+        totalPath = totalPath.union(bestPath)
+        state = mine.results(state, bestPath)
+    #end
+
+    print(totalSum)
+    print(totalPath)
+    print(state)
+
     raise NotImplementedError
 #end
 
@@ -752,20 +785,20 @@ def find_action_sequence(s0, s1):
     '''
     Compute a sequence of actions to go from state s0 to state s1.
     There may be several possible sequences.
-    
-    Preconditions: 
-        s0 and s1 are legal states, s0<=s1 and 
-    
+
+    Preconditions:
+        s0 and s1 are legal states, s0<=s1 and
+
     Parameters
     ----------
     s0 : tuple based mine state
-    s1 : tuple based mine state 
+    s1 : tuple based mine state
 
     Returns
     -------
     A sequence of actions to go from state s0 to state s1
 
-    '''    
+    '''
     # approach: among all columns for which s0 < s1, pick the column loc
     # with the smallest s0[loc]
 
@@ -831,6 +864,7 @@ def back2D(actions, state):
 def main():
     # print(my_team())
     #
+    b = np.array([[-1, -200, 1], [5, 8, 5]])
     v = np.array([[-1, -1, -1], [-1, 4, -1], [-1, -10, 11]])
     # vDash = np.array([[-1, -1, 10, 5], [-1, -20, -4, -7], [-1, -1, -1, -21]])
     # # w = np.array([[1, 4], [2, 5], [3, 6]])
@@ -838,7 +872,7 @@ def main():
     # y = np.array([[1, -6, 1, 1], [2, 5, 1, 1], [3, 6, 1, 1], [3, 6, 1, -10]])
     z = np.array([[[1, 4, 1, 1], [2, 5, 1, 1], [3, 6, 1, 1]], x - 1])
 
-    mine = Mine(underground=v, dig_tolerance=1)
+    mine = Mine(underground=b, dig_tolerance=1)
     #
     # best_action_list, best_payoff, best_final_state = search_dp_dig_plan(mine)
     #
@@ -846,7 +880,7 @@ def main():
     # print(best_final_state)
     # print(best_payoff)
 
-    # search_bb_dig_plan(mine)
+    search_bb_dig_plan(mine)
 
 
     #
@@ -860,18 +894,17 @@ def main():
 
     # mine.plot_state(np.array(s1))
 
-    print(mine.is_dangerous(s0))
+    # print(mine.is_dangerous(s0))
 
     # print(find_action_sequence(s0,s1))
 
 #end
-        
+
 if __name__ == "__main__":
     main()
 
 #end
-        
-        
-    
-    
-    
+
+
+
+
