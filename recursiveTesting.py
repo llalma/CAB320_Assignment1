@@ -98,8 +98,38 @@ def actions3DTest():
             print(child)
             # assert child == expectedActions[i]
 
+def emptyTupleTest():
+    input = np.array([[]])
+    mine = mining.Mine(input)
+
+    state = np.array([[]])
+    state = np.expand_dims(state, 1)
+    expectedActions = []
+    actualActions = mine.actions(state)
+
+    for i,child in enumerate(actualActions):
+        print(child)
+        assert child == expectedActions[i]
+    # end
 
 # end
+
+def oneTupleValueTest():
+    input = np.array([[33]])
+    mine = mining.Mine(input)
+
+    state = np.array([[0]])
+    state = np.expand_dims(state, 1)
+    expectedActions = [(0,0)]
+    actualActions = mine.actions(state)
+
+    for i,child in enumerate(actualActions):
+        print(child)
+        assert child == expectedActions[i]
+    # end
+
+# end
+
 
 def main():
     # test1()
@@ -107,7 +137,9 @@ def main():
     # surface_neigbhours2DTest()
     # surface_neigbhours3DTest()
     # actions2DTest()
-    actions3DTest()
+    # actions3DTest()
+    # emptyTupleTest()
+    oneTupleValueTest()
 # end
 
 if __name__ == "__main__":

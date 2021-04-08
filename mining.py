@@ -655,9 +655,42 @@ def search_bb_dig_plan(mine):
 
     '''
 
-    print(bbSearch(mine, mine.initial))
+    NewUnderground = np.array(mine.underground)
+    print(NewUnderground)
+    a = 0
+    try:
+        x,y,z = np.where(mine.initial==0)
+        # print(x,y,z)
+        #Start at bottom of mine
+        for loc in zip(np.flip(x),np.flip(y),np.flip(z)):
+            # print(loc)
+            if mine.underground[loc] > 0 and loc[2] -1 >= 0:
+                print(mine.underground[loc])
+                oneUp = np.array(loc)
+                oneUp[2] = (oneUp[2] - 1)
+                print(loc)
+                print(oneUp)
+                print(NewUnderground[1,0,1])
+                NewUnderground[oneUp] = NewUnderground[oneUp] + mine.underground[loc]
+
+                print("NewUnderground")
+                print(NewUnderground)
+
+                print(mine.underground[loc])
+                a =+ 1
+                print("a")
+                print(a)
+                break
+    except Exception as e:
+        print(e)
+        print("Yeet")
+    #
+    # return
+
+
+    # print(bbSearch(mine, mine.initial))
     
-    raise NotImplementedError
+    # raise NotImplementedError
 #end
 
 
@@ -666,20 +699,20 @@ def find_action_sequence(s0, s1):
     '''
     Compute a sequence of actions to go from state s0 to state s1.
     There may be several possible sequences.
-    
-    Preconditions: 
-        s0 and s1 are legal states, s0<=s1 and 
-    
+
+    Preconditions:
+        s0 and s1 are legal states, s0<=s1 and
+
     Parameters
     ----------
     s0 : tuple based mine state
-    s1 : tuple based mine state 
+    s1 : tuple based mine state
 
     Returns
     -------
     A sequence of actions to go from state s0 to state s1
 
-    '''    
+    '''
     # approach: among all columns for which s0 < s1, pick the column loc
     # with the smallest s0[loc]
 
@@ -739,11 +772,12 @@ def main():
 
     mine = Mine(underground=v, dig_tolerance=1)
 
-    best_action_list, best_payoff, best_final_state = search_bb_dig_plan(mine)
+    # best_action_list, best_payoff, best_final_state = search_bb_dig_plan(mine)
+    search_bb_dig_plan(mine)
 
-    print(best_action_list)
-    print(best_final_state)
-    print(best_payoff)
+    # print(best_action_list)
+    # print(best_final_state)
+    # print(best_payoff)
 
     # search_bb_dig_plan(mine)
 
