@@ -72,25 +72,31 @@ def actions2DTest():
     mine = mining.Mine(input)
 
     state = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
+    state = np.expand_dims(state, 1)
+    expectedActions = [(0, 0),(1, 0),(2, 0)]
+    actualActions = mine.actions(state)
 
-    actualActions = mine.actions( state)
-    for child in actualActions:
-        print(next(child))
-    # expectedActions = [(0, 0), (2, 0)]
-    # assert actualActions == expectedActions
+    for i,child in enumerate(actualActions):
+        print(child)
+        assert child == expectedActions[i]
+    # end
+
+# end
 
 def actions3DTest():
         x = np.array([[1, 4, 1, 1], [2, 5, 1, 1], [3, 6, 1, -1]])
         input = np.array([[[1, 4, 1, 1], [2, 5, 1, 1], [3, 6, 1, 1]], x - 1])
         mine = mining.Mine(input)
 
-        state = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
-        actualActions = mine.actions(mine, state)
-        for child in actualActions:
-            print(next(child))
-        # expectedActions = [(0, 0), (2, 0)]
-        # assert actualActions == expectedActions
+        y = np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
+        state = np.array([[[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], y ])
+        state = np.expand_dims(state, 1)
+        actualActions = mine.actions(state)
 
+
+        for (i,j), child in enumerate(actualActions):
+            print(child)
+            # assert child == expectedActions[i]
 
 
 # end
@@ -100,7 +106,8 @@ def main():
     # test2()
     # surface_neigbhours2DTest()
     # surface_neigbhours3DTest()
-    actions2DTest()
+    # actions2DTest()
+    actions3DTest()
 # end
 
 if __name__ == "__main__":
