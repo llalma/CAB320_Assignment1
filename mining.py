@@ -700,40 +700,40 @@ def search_dp_dig_plan(mine):
 
     best_payoff, best_action_list, best_final_state = searchRec(mine, mine.initial)
 
-    return best_payoff, find_action_sequence(np.zeros_like(best_final_state), best_final_state), np.sum(best_final_state, axis=2)
+    return best_payoff, find_action_sequence(np.zeros_like(best_final_state), best_final_state), best_final_state
 #end
 
 
-#BB Arroach
-def bbSearch(mine, state, bestPath, bestState, bestSum=0):
-    bestChildSum = 0
-    bestChildPath = set()
+#BB Approach
+def getBestSumPerCol(mine):
+    summedCols = {}
+    # summedCols = mine.initial[:,:,0]
 
-    state = np.array(state)
-    gen = mine.actions(state)
-    for child in gen:
-
-        child = (child[0], child[1], sum(state[child]))
-        tempSum, bestPath, bestState = bbSearch(mine, mine.result(state, child), bestPath, bestState, bestSum + mine.underground[child])
-
-        if tempSum > bestChildSum:
-            bestChildSum = tempSum
-            bestChildPath.add(child)
+    for x in range(mine.len_x):
+        for y in range(mine.len_y):
+           summedCols[(x,y)],_ = findMaxSumInList(mine.underground[(x,y)])
         #end
-    # end
-
-    if bestChildSum == 12:
-        print("")
     #end
 
-    if bestChildSum > bestSum:
-        bestSum = bestChildSum
-        bestPath = bestPath.union(bestChildPath)
-        bestState = np.bitwise_or(np.array(state), np.array(bestState))
-    #end
-
-    return bestSum, bestPath, bestState
+    return summedCols
+    # return np.array(summedCols).astype(np.float)
 #end
+
+def findMaxSumInList(x):
+    bestSum = x[0]
+    besti = -1
+
+    for i in range(1,len(x)+1):
+        tempSum = sum(x[:i])
+        if tempSum > bestSum:
+            bestSum = tempSum
+            besti = i
+        # end
+    #end
+
+    return bestSum, besti
+#end
+
 
 def search_bb_dig_plan(mine):
     '''
@@ -752,31 +752,53 @@ def search_bb_dig_plan(mine):
 
     '''
 
-    totalSum = 0
-    totalPath = set()
     state = mine.initial
+    sumList = []
+    pathList = []
 
-    bestPath = set()
-    bestState = state.copy()
+    summedCols = getBestSumPerCol(mine)
+    while len(sumList) != len(state.flatten()):
 
-    while 1:
-        bestVal, bestPath, _ = bbSearch(mine, state, bestPath, bestState)
+        validLocs = [x for x in mine.actions(state)]
 
-        #Stop looping as best found value is not worth digging
-        if bestVal <= 0:
+        summedColsTemp = sorted(summedCols, key=summedCols.get, reverse=True)
+        i = 0
+        maxLoc2D = None
+        while maxLoc2D not in validLocs:
+            maxLoc2D = summedColsTemp[i]
+            i += 1
+        # end
+
+        maxLoc3D = (maxLoc2D[0], maxLoc2D[1], int(np.sum(state[maxLoc2D])))
+
+        if maxLoc3D[2] < mine.len_z:
+            sumList.append(mine.underground[maxLoc3D])
+            pathList.append(maxLoc3D)
+
+            # Fix Z components
+            state = np.array(mine.result(state, maxLoc3D))
+
+            # Get new Max value for coloumn
+            summedCols[maxLoc2D] -= mine.underground[maxLoc3D]
+        else:
+            summedCols[maxLoc2D] = -np.inf
+        # end
+    # end
+
+    # Remove all neagtive values from end of sum and path, until first positive is hit in sumlist
+    for i in range(len(sumList) - 1, -1, -1):
+        if sumList[i] <= 0:
+            del sumList[i]
+            del pathList[i]
+        else:
             break
-        #end
+        # end
+    # end
 
-        totalSum += bestVal
-        totalPath = totalPath.union(bestPath)
-        state = mine.results(state, bestPath)
-    #end
+    #Find the best place in the list to stop to get the maximum sum out of it.
+    maxSum, bestI = findMaxSumInList(sumList)
 
-    print(totalSum)
-    print(totalPath)
-    print(state)
-
-    raise NotImplementedError
+    return maxSum, pathList[0:bestI], mine.results(mine.initial, pathList[0:bestI])
 #end
 
 
@@ -872,15 +894,15 @@ def main():
     # y = np.array([[1, -6, 1, 1], [2, 5, 1, 1], [3, 6, 1, 1], [3, 6, 1, -10]])
     z = np.array([[[1, 4, 1, 1], [2, 5, 1, 1], [3, 6, 1, 1]], x - 1])
 
-    mine = Mine(underground=b, dig_tolerance=1)
+    mine = Mine(underground=v, dig_tolerance=1)
     #
-    # best_action_list, best_payoff, best_final_state = search_dp_dig_plan(mine)
-    #
-    # print(best_action_list)
-    # print(best_final_state)
-    # print(best_payoff)
+    best_action_list, best_payoff, best_final_state = search_dp_dig_plan(mine)
 
-    search_bb_dig_plan(mine)
+    print(best_action_list)
+    print(best_final_state)
+    print(best_payoff)
+
+    print(search_bb_dig_plan(mine))
 
 
     #
