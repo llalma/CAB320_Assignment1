@@ -655,37 +655,45 @@ def search_bb_dig_plan(mine):
 
     '''
 
-    NewUnderground = np.array(mine.underground)
+    NewUnderground = mine.underground.copy()
+
     print(NewUnderground)
-    a = 0
+
     try:
         x,y,z = np.where(mine.initial==0)
-        # print(x,y,z)
+        tuples = sorted(zip(x, y, z), key=lambda x: x[-1], reverse=True)
+
         #Start at bottom of mine
-        for loc in zip(np.flip(x),np.flip(y),np.flip(z)):
+        for loc in tuples:
             # print(loc)
-            if mine.underground[loc] > 0 and loc[2] -1 >= 0:
-                print(mine.underground[loc])
-                oneUp = np.array(loc)
-                oneUp[2] = (oneUp[2] - 1)
-                print(loc)
-                print(oneUp)
-                print(NewUnderground[1,0,1])
-                NewUnderground[oneUp] = NewUnderground[oneUp] + mine.underground[loc]
+            if NewUnderground[loc] > 0 and loc[2] -1 >= 0:
 
-                print("NewUnderground")
-                print(NewUnderground)
+                oneUp = (loc[0], loc[1], loc[2]-1)
 
-                print(mine.underground[loc])
-                a =+ 1
-                print("a")
-                print(a)
-                break
+                NewUnderground[oneUp] += NewUnderground[loc]
+
+                for x in range(-1,2):
+                    for y in range(-1,2):
+                        if (x,y) != (0,0):
+                            tempLoc = (loc[0]-x,loc[1]-y, loc[2]-mine.dig_tolerance)
+                            if mine.validCoords(tempLoc):
+                                NewUnderground[tempLoc] += NewUnderground[loc]
+                            #end
+                        #end
+                    #end
+                #end
+
+            #end
+        #end
     except Exception as e:
         print(e)
         print("Yeet")
     #
     # return
+
+    print(NewUnderground)
+
+    return NewUnderground
 
 
     # print(bbSearch(mine, mine.initial))
@@ -763,14 +771,14 @@ def find_action_sequence(s0, s1):
 def main():
     # print(my_team())
     #
-    v = np.array([[-1, -1, 10], [-1, 20, 4], [-1, -1, -1]])
-    # vDash = np.array([[-1, -1, 10, 5], [-1, -20, -4, -7], [-1, -1, -1, -21]])
+    # v = np.array([[-1, -1, 10], [-1, 20, 4], [-1, -1, -1]])
+    vDash = np.array([[-1, -1, 10, 5], [-1, -20, -4, -7], [-1, -1, -1, -21]])
     # # w = np.array([[1, 4], [2, 5], [3, 6]])
     # # x = np.array([[1, 4, 1, 1], [2, 5, 1, 1], [3, 6, 1, -1]])
     # # y = np.array([[1, -6, 1, 1], [2, 5, 1, 1], [3, 6, 1, 1], [3, 6, 1, -10]])
     # # z = np.array([[[1, 4, 1, 1], [2, 5, 1, 1], [3, 6, 1, 1]], x - 1])
 
-    mine = Mine(underground=v, dig_tolerance=1)
+    mine = Mine(underground=vDash, dig_tolerance=2)
 
     # best_action_list, best_payoff, best_final_state = search_bb_dig_plan(mine)
     search_bb_dig_plan(mine)
