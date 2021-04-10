@@ -50,6 +50,7 @@ import time
 
 
 
+
 def my_team():
     '''    Return the list of the team members of this assignment submission
     as a list    of triplet of the form (student_number, first_name, last_name)        '''
@@ -698,7 +699,7 @@ def search_dp_dig_plan(mine):
 
     '''
 
-    best_payoff, best_action_list, best_final_state = searchRec(mine, mine.initial)
+    best_payoff, best_action_list, best_final_state = searchRec(mine, mine.initial.copy())
 
     return best_payoff, find_action_sequence(np.zeros_like(best_final_state), best_final_state), best_final_state
 #end
@@ -706,22 +707,20 @@ def search_dp_dig_plan(mine):
 
 #BB Approach
 def getBestSumPerCol(mine):
-    summedCols = {}
-    # summedCols = mine.initial[:,:,0]
+    summedCols = mine.initial[:,:,0].copy()
 
     for x in range(mine.len_x):
         for y in range(mine.len_y):
-           summedCols[(x,y)],_ = findMaxSumInList(mine.underground[(x,y)])
+            summedCols[(x,y)], _ = findMaxSumInList(mine.underground[(x,y)])
         #end
     #end
 
-    return summedCols
-    # return np.array(summedCols).astype(np.float)
+    return np.array(summedCols).astype(np.float)
 #end
 
 def findMaxSumInList(x):
     bestSum = x[0]
-    besti = -1
+    besti = 0
 
     for i in range(1,len(x)+1):
         tempSum = sum(x[:i])
@@ -734,6 +733,26 @@ def findMaxSumInList(x):
     return bestSum, besti
 #end
 
+def findFirstValidLoc(mine, state, loc, validLocs):
+    # Get one of the neighbours
+    neighbours = mine.surface_neigbhours(loc)
+
+    minSum = np.inf
+    minLoc = None
+
+    for n in neighbours:
+        if np.sum(state[n]) < minSum:
+            minSum = np.sum(state[n])
+            minLoc = n
+        # end
+    # end
+
+    if minLoc in validLocs:
+       return minLoc
+    else:
+        return findFirstValidLoc(mine, state, minLoc, validLocs)
+    #end
+#end
 
 def search_bb_dig_plan(mine):
     '''
@@ -752,7 +771,7 @@ def search_bb_dig_plan(mine):
 
     '''
 
-    state = mine.initial
+    state = mine.initial.copy()
     sumList = []
     pathList = []
 
@@ -761,27 +780,25 @@ def search_bb_dig_plan(mine):
 
         validLocs = [x for x in mine.actions(state)]
 
-        summedColsTemp = sorted(summedCols, key=summedCols.get, reverse=True)
-        i = 0
-        maxLoc2D = None
-        while maxLoc2D not in validLocs:
-            maxLoc2D = summedColsTemp[i]
-            i += 1
-        # end
+        diggingLoc2D = np.unravel_index(np.argmax(summedCols), summedCols.shape)
+        diggingLoc3D = (diggingLoc2D[0], diggingLoc2D[1], int(np.sum(state[diggingLoc2D])))
 
-        maxLoc3D = (maxLoc2D[0], maxLoc2D[1], int(np.sum(state[maxLoc2D])))
+        if diggingLoc2D not in validLocs:
+            diggingLoc2D = findFirstValidLoc(mine, state, diggingLoc2D, validLocs)
+            diggingLoc3D = (diggingLoc2D[0], diggingLoc2D[1], int(np.sum(state[diggingLoc2D])))
+        #end
 
-        if maxLoc3D[2] < mine.len_z:
-            sumList.append(mine.underground[maxLoc3D])
-            pathList.append(maxLoc3D)
+        if diggingLoc3D[2] < mine.len_z:
+            sumList.append(mine.underground[diggingLoc3D])
+            pathList.append(diggingLoc3D)
 
             # Fix Z components
-            state = np.array(mine.result(state, maxLoc3D))
+            state = np.array(mine.result(state, diggingLoc3D))
 
             # Get new Max value for coloumn
-            summedCols[maxLoc2D] -= mine.underground[maxLoc3D]
+            summedCols[diggingLoc2D] -= mine.underground[diggingLoc3D]
         else:
-            summedCols[maxLoc2D] = -np.inf
+            summedCols[diggingLoc2D] = -np.inf
         # end
     # end
 
@@ -797,8 +814,7 @@ def search_bb_dig_plan(mine):
 
     #Find the best place in the list to stop to get the maximum sum out of it.
     maxSum, bestI = findMaxSumInList(sumList)
-
-    return maxSum, pathList[0:bestI], mine.results(mine.initial, pathList[0:bestI])
+    return maxSum, pathList[0:bestI], mine.results(mine.initial.copy(), pathList[0:bestI])
 #end
 
 
@@ -896,11 +912,11 @@ def main():
 
     mine = Mine(underground=v, dig_tolerance=1)
     #
-    best_action_list, best_payoff, best_final_state = search_dp_dig_plan(mine)
-
-    print(best_action_list)
-    print(best_final_state)
-    print(best_payoff)
+    # best_action_list, best_payoff, best_final_state = search_dp_dig_plan(mine)
+    #
+    # print(best_action_list)
+    # print(best_final_state)
+    # print(best_payoff)
 
     print(search_bb_dig_plan(mine))
 
