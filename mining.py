@@ -46,6 +46,7 @@ from numbers import Number
 
 import search
 
+import operator
 import time
 
 
@@ -719,7 +720,7 @@ def getBestSumPerCol(mine):
 #end
 
 def findMaxSumInList(x):
-    bestSum = x[0]
+    bestSum = 0
     besti = 0
 
     for i in range(1,len(x)+1):
@@ -733,25 +734,33 @@ def findMaxSumInList(x):
     return bestSum, besti
 #end
 
-def findFirstValidLoc(mine, state, loc, validLocs):
+def findFirstValidLoc(mine, state, loc, validLocs, summedCols):
     # Get one of the neighbours
-    neighbours = mine.surface_neigbhours(loc)
+    outputLoc = None
+    prevVisited = set()
+    while outputLoc == None:
+        neighbours = mine.surface_neigbhours(loc)
 
-    minSum = np.inf
-    minLoc = None
-
-    for n in neighbours:
-        if np.sum(state[n]) < minSum:
-            minSum = np.sum(state[n])
-            minLoc = n
+        neighbourValues = []
+        for n in neighbours:
+            nHeight = int(np.sum(state[n]))
+            if nHeight < mine.len_z:
+                nValue = summedCols[n]
+                neighbourValues.append((nHeight, nValue, n))
+            #end
         # end
-    # end
 
-    if minLoc in validLocs:
-       return minLoc
-    else:
-        return findFirstValidLoc(mine, state, minLoc, validLocs)
+        minLoc = sorted(neighbourValues, key = operator.itemgetter(0, 1))[0][2]
+
+        if minLoc in validLocs:
+           outputLoc = minLoc
+        else:
+            loc = minLoc
+            prevVisited.add(minLoc)
+        #end
     #end
+
+    return outputLoc
 #end
 
 def search_bb_dig_plan(mine):
@@ -776,16 +785,36 @@ def search_bb_dig_plan(mine):
     pathList = []
 
     summedCols = getBestSumPerCol(mine)
+
     while len(sumList) != len(state.flatten()):
 
         validLocs = [x for x in mine.actions(state)]
 
-        diggingLoc2D = np.unravel_index(np.argmax(summedCols), summedCols.shape)
-        diggingLoc3D = (diggingLoc2D[0], diggingLoc2D[1], int(np.sum(state[diggingLoc2D])))
+        diggingLoc2D = None
 
-        if diggingLoc2D not in validLocs:
-            diggingLoc2D = findFirstValidLoc(mine, state, diggingLoc2D, validLocs)
+        #Just grab a position if positive and in valid locs
+        for l in validLocs:
+            l = (l[0], l[1], int(np.sum(state[l])))
+            if l == (0,0,1):
+                print("")
+            if mine.underground[l] >= 0:
+                diggingLoc2D = (l[0],l[1])
+                diggingLoc3D = (diggingLoc2D[0], diggingLoc2D[1], int(np.sum(state[diggingLoc2D])))
+                break
+            #end
+        #end
+
+        if diggingLoc2D == None:
+
+            diggingLoc2D = np.unravel_index(np.argmax(summedCols), summedCols.shape)
             diggingLoc3D = (diggingLoc2D[0], diggingLoc2D[1], int(np.sum(state[diggingLoc2D])))
+
+            if diggingLoc2D not in validLocs:
+                if diggingLoc2D == (4,0):
+                    print("")
+                diggingLoc2D = findFirstValidLoc(mine, state, diggingLoc2D, validLocs, summedCols)
+                diggingLoc3D = (diggingLoc2D[0], diggingLoc2D[1], int(np.sum(state[diggingLoc2D])))
+            #end
         #end
 
         if diggingLoc3D[2] < mine.len_z:
@@ -797,12 +826,16 @@ def search_bb_dig_plan(mine):
 
             # Get new Max value for coloumn
             summedCols[diggingLoc2D] -= mine.underground[diggingLoc3D]
+
+            if int(np.sum(state[diggingLoc2D])) == mine.len_z:
+                summedCols[diggingLoc2D] = -np.inf
+            #end
         else:
             summedCols[diggingLoc2D] = -np.inf
         # end
     # end
 
-    # Remove all neagtive values from end of sum and path, until first positive is hit in sumlist
+    # Remove all negative values from end of sum and path, until first positive is hit in sumlist
     for i in range(len(sumList) - 1, -1, -1):
         if sumList[i] <= 0:
             del sumList[i]
@@ -814,7 +847,10 @@ def search_bb_dig_plan(mine):
 
     #Find the best place in the list to stop to get the maximum sum out of it.
     maxSum, bestI = findMaxSumInList(sumList)
-    return maxSum, pathList[0:bestI], mine.results(mine.initial.copy(), pathList[0:bestI])
+
+    finalState = mine.results(mine.initial.copy(), pathList[0:bestI])
+
+    return maxSum, find_action_sequence(mine.initial.copy(), finalState), finalState
 #end
 
 
@@ -904,10 +940,10 @@ def main():
     #
     b = np.array([[-1, -200, 1], [5, 8, 5]])
     v = np.array([[-1, -1, -1], [-1, 4, -1], [-1, -10, 11]])
-    # vDash = np.array([[-1, -1, 10, 5], [-1, -20, -4, -7], [-1, -1, -1, -21]])
-    # # w = np.array([[1, 4], [2, 5], [3, 6]])
+    vDash = np.array([[-1, -1, 10, 5], [-1, -20, -4, -7], [-1, -1, -1, -21]])
+    w = np.array([[1, 4], [2, 5], [3, 6]])
     x = np.array([[1, 4, 1, 1], [2, 5, 1, 1], [3, 6, 1, -1]])
-    # y = np.array([[1, -6, 1, 1], [2, 5, 1, 1], [3, 6, 1, 1], [3, 6, 1, -10]])
+    y = np.array([[1, -6, 1, 1], [2, 5, 1, 1], [3, 6, 1, 1], [3, 6, 1, -10]])
     z = np.array([[[1, 4, 1, 1], [2, 5, 1, 1], [3, 6, 1, 1]], x - 1])
 
     mine = Mine(underground=v, dig_tolerance=1)
