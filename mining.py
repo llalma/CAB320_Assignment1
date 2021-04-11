@@ -750,6 +750,54 @@ def getMaxNode(summedCols, validCoords):
     return tuple(sortedSummedCols[i]), summedCols[tuple(sortedSummedCols[i])]
 #end
 
+def getActions(mine, state):
+    state = np.array(state)
+
+    ####################
+    #   Really bad need to find a better way.
+    ####################
+
+    for x in range(0, mine.len_x, 1):
+        for y in range(0, mine.len_y, 1):
+            validCheck = False
+            for neighbour in mine.surface_neigbhours((x, y)):
+                g = mine.getDepth(state, (x, y))
+                h = mine.getDepth(state, neighbour)
+                diff = mine.getDepth(state, (x, y)) - mine.getDepth(state, neighbour)
+                if abs(diff) <= mine.dig_tolerance and mine.getDepth(state, (x, y)) < mine.len_z and diff <= 0:
+                    validCheck = True
+                else:
+                    validCheck = False
+                    break
+                # end
+            # end
+
+            if validCheck:
+                yield (x, y, int(np.sum(state[(x,y)])))
+            # end
+        # end
+# end
+#end
+
+def testMethod(mine, rollingSum, rollingPath, state=None):
+    for i in range(len(rollingSum)):
+        if rollingSum[i] < 0:
+            actions = [a for a in getActions(mine, state)]
+            for j in range(i+1, len(rollingSum)):
+                # loc = (rollingPath[j][0], rollingPath[j][1])
+                if rollingPath[j] in actions:
+                    del rollingPath[i:j]
+                    del rollingSum[i:j]
+                    return testMethod(mine, rollingSum, rollingPath, state= np.array(mine.result(state, rollingPath[j])))
+                #end
+            #end
+        else:
+            state = np.array(mine.result(state, rollingPath[i]))
+        #end
+    #end
+
+    return rollingSum, rollingPath
+#end
 
 def search_bb_dig_plan(mine, state=None):
     '''
@@ -800,17 +848,22 @@ def search_bb_dig_plan(mine, state=None):
         #Mine Location and update summedCols
         state = np.array(mine.result(state, digLoc3D))
         summedCols[digLoc] -= mine.underground[digLoc3D]
-
-        tempSum, _ = getMaxSumOfColoumn(rollingSum)
-        if tempSum > maxSum:
-            maxSum = tempSum
-            maxPath = rollingPath
-        #end
     #end
 
 
+    rollingSum, rollingPath = testMethod(mine, rollingSum, rollingPath, state=mine.initial.copy())
 
-    return maxSum, maxPath
+    tempSum, maxIndex = getMaxSumOfColoumn(rollingSum)
+    if tempSum > maxSum:
+        maxSum = tempSum
+        maxPath = rollingPath[0:maxIndex]
+    # end
+
+    fState = mine.results(mine.initial.copy(), maxPath)
+
+    #Right now produces correct result for 3d but not for 2d. Wrong as the test method does not check if other states become invalid
+
+    return maxSum, find_action_sequence(mine.initial.copy(),fState), fState
 #end
 
 
