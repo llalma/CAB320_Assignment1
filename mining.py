@@ -657,31 +657,75 @@ def search_bb_dig_plan(mine):
 
     NewUnderground = mine.underground.copy()
 
+
     print(NewUnderground)
 
     try:
         x,y,z = np.where(mine.initial==0)
         tuples = sorted(zip(x, y, z), key=lambda x: x[-1], reverse=True)
-
+        locTrack = -1
         #Start at bottom of mine
         for loc in tuples:
             # print(loc)
+            if locTrack != loc[2]:
+                location = []
+                locTrack = loc[2]
+
+            NewUndergroundBackTrack = NewUnderground.copy()
+
             if NewUnderground[loc] > 0 and loc[2] -1 >= 0:
-
+                OneUpUpdated = False
+                BackTrack = False
                 oneUp = (loc[0], loc[1], loc[2]-1)
+                if NewUnderground[oneUp] > -1:
+                    tally = NewUnderground[loc]
 
-                NewUnderground[oneUp] += NewUnderground[loc]
+                #end
+                if NewUnderground[oneUp] < 0 and OneUpUpdated == False:
+                    if NewUnderground[oneUp] + NewUnderground[loc] < 0:
+                        BackTrack = True
+                    NewUnderground[oneUp] += NewUnderground[loc]
+                    tally = NewUnderground[oneUp]
+                    OneUpUpdated = True
+                #end
+
 
                 for x in range(-1,2):
                     for y in range(-1,2):
                         if (x,y) != (0,0):
                             tempLoc = (loc[0]-x,loc[1]-y, loc[2]-mine.dig_tolerance)
                             if mine.validCoords(tempLoc):
-                                NewUnderground[tempLoc] += NewUnderground[loc]
+
+                                if locTrack == loc[2]:
+                                    location += [tempLoc]
+
+
+                                tally = tally + NewUnderground[tempLoc]
+                                if tally < 0:
+                                    # BackTrack = True
+                                    pass
+                                NewUnderground[tempLoc] = tally
                             #end
                         #end
                     #end
                 #end
+
+
+
+                if NewUnderground[oneUp] > -1 and OneUpUpdated == False:
+
+                    NewUnderground[oneUp] = NewUnderground[oneUp] + tally
+                    OneUpUpdated = True
+
+            for i in range(0, len(location)):
+                for j in range(i + 1, len(location)):
+                    if (location[i] == location[j]):
+                        # print(NewUnderground)
+                        if NewUnderground[location[j]] > -1:
+                            BackTrack = False
+            if BackTrack:
+                NewUnderground = NewUndergroundBackTrack.copy()
+                BackTrack = False
 
             #end
         #end
@@ -771,14 +815,15 @@ def find_action_sequence(s0, s1):
 def main():
     # print(my_team())
     #
-    # v = np.array([[-1, -1, 10], [-1, 20, 4], [-1, -1, -1]])
-    vDash = np.array([[-1, -1, 10, 5], [-1, -20, -4, -7], [-1, -1, -1, -21]])
+    # v = np.array([[-1, -1, 12], [-1, -20, 4], [-1, -1, 12]])
+    v = np.array([[-1, -1, 10], [-1, 20, 4], [-1, -1, -1]])
+    # vDash = np.array([[-1, -1, 10, 5], [-1, -20, -4, -7], [-1, -1, -1, -21]])
     # # w = np.array([[1, 4], [2, 5], [3, 6]])
     # # x = np.array([[1, 4, 1, 1], [2, 5, 1, 1], [3, 6, 1, -1]])
-    # # y = np.array([[1, -6, 1, 1], [2, 5, 1, 1], [3, 6, 1, 1], [3, 6, 1, -10]])
+    # y = np.array([[1, -6, 1, 1], [2, 5, 1, 1], [3, 6, 1, 1], [3, 6, 1, -10]])
     # # z = np.array([[[1, 4, 1, 1], [2, 5, 1, 1], [3, 6, 1, 1]], x - 1])
 
-    mine = Mine(underground=vDash, dig_tolerance=2)
+    mine = Mine(underground=v, dig_tolerance=1)
 
     # best_action_list, best_payoff, best_final_state = search_bb_dig_plan(mine)
     search_bb_dig_plan(mine)
