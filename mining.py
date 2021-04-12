@@ -764,7 +764,7 @@ def getMax(mine, newUnderground):
 
         maxIndex = np.argmax(sums)
 
-        maxLoc = (validLocs[maxIndex][0], validLocs[maxIndex][1], np.sum(state[validLocs[maxIndex]]))
+        maxLoc = (validLocs[maxIndex][0], validLocs[maxIndex][1], int(np.sum(state[validLocs[maxIndex]])))
 
         outputSum.append(mine.underground[maxLoc])
         outputPath.append(maxLoc)
@@ -792,22 +792,20 @@ def find_action_sequence(s0, s1):
     '''
     Compute a sequence of actions to go from state s0 to state s1.
     There may be several possible sequences.
-
     Preconditions:
         s0 and s1 are legal states, s0<=s1 and
-
     Parameters
     ----------
     s0 : tuple based mine state
     s1 : tuple based mine state
-
     Returns
     -------
     A sequence of actions to go from state s0 to state s1
-
     '''
     # approach: among all columns for which s0 < s1, pick the column loc
     # with the smallest s0[loc]
+
+    flag = False
 
     #Convert both states to numpy array.
     s0 = np.array(s0)
@@ -819,35 +817,23 @@ def find_action_sequence(s0, s1):
     if s0.ndim == 2:
         s0 = np.expand_dims(s0, 1)
         s1 = np.expand_dims(s1, 1)
+        flag = True
     #end
-
 
     while not np.array_equal(s0, s1):
-        s0Summed = np.sum(s0, axis=2)
-        s1Summed = np.sum(s1, axis=2)
+        #s0 < s1
+        x,y = np.where(np.sum(s0,2) < np.sum(s1,2))
+        locs = list(zip(x,y))
 
-        minLoc = (-1, -1)
-        minDiff = float("Inf")
+        #Get smallest s0[loc
+        vals = list(map(lambda loc: sum(s0[loc]),locs))
 
+        loc = locs[vals.index(min(vals))]
+        loc = (loc[0], loc[1], int(sum(s0[loc])))
 
-
-        for x in range(s0.shape[0]):
-            for y in range(s0.shape[1]):
-                loc = (x,y)
-
-                if s0Summed[loc] < s1Summed[loc]:
-                    if s0Summed[loc] < minDiff:
-                        minLoc = (loc[0],loc[1],s0Summed[loc])
-                        minDiff = s0Summed[loc]
-                    #end
-                #end
-            #end
-        #end
-
-        outputActionList.append(minLoc)
-        s0[minLoc] = 1
+        outputActionList.append(loc)
+        s0[loc] = 1
     #end
-
 
     return outputActionList
 #end

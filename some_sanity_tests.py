@@ -122,13 +122,13 @@ def test_2D_search_dig_plan():
 
 
     print('-------------- DP computations -------------- ')
-    # tic = time.time()
-    # best_payoff, best_a_list, best_final_state = search_dp_dig_plan(mine)
-    # toc = time.time()
-    # print('DP Best payoff ',best_payoff)
-    # print('DP Best final state ', best_final_state)
-    # print('DP action list ', best_a_list)
-    # print('DP Computation took {} seconds\n'.format(toc-tic))
+    tic = time.time()
+    best_payoff, best_a_list, best_final_state = search_dp_dig_plan(mine)
+    toc = time.time()
+    print('DP Best payoff ',best_payoff)
+    print('DP Best final state ', best_final_state)
+    print('DP action list ', best_a_list)
+    print('DP Computation took {} seconds\n'.format(toc-tic))
 
     
     print('-------------- BB computations -------------- ')
