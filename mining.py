@@ -846,12 +846,12 @@ def main():
 
 
     #
-    s0 = [[1,0,0], [1,0,0], [0,0,0]]
-    s1 = [[1, 1, 1], [1, 1, 1], [1, 1, 1]]
+    # s0 = [[1,0,0], [1,0,0], [0,0,0]]
+    # s1 = [[1, 1, 1], [1, 1, 1], [1, 1, 1]]
 
     # mine.plot_state(np.array(s1))
 
-    print(mine.is_dangerous(s0))
+    # print(mine.is_dangerous(s0))
 
     # print(find_action_sequence(s0,s1))
 
