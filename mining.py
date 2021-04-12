@@ -818,6 +818,8 @@ def main():
     # v = np.array([[-1, -1, 12], [-1, -20, 4], [-1, -1, 12]])
     # v = np.array([[-1, -1, 10], [-1, 20, 4], [-1, -1, -1]])
     some_2d_underground_1 = np.array([
+        [-0.814, 0.637, 1.824, -0.563],
+        [0.559, -0.234, -0.366, 0.07],
         [0.175, -0.284, 0.026, -0.316],
         [0.212, 0.088, 0.304, 0.604],
         [-1.231, 1.558, -0.467, -0.371]])
@@ -831,7 +833,7 @@ def main():
     # y = np.array([[1, -6, 1, 1], [2, 5, 1, 1], [3, 6, 1, 1], [3, 6, 1, -10]])
     # z = np.array([[[1, 4, 1, 1], [2, 5, 1, 1], [3, 6, 1, 1]], x - 1])
 
-    mine = Mine(underground=some_2d_underground_1, dig_tolerance=1)
+    mine = Mine(underground=some_2d_underground_1, dig_tolerance=2)
 
     # best_action_list, best_payoff, best_final_state = search_bb_dig_plan(mine)
     search_bb_dig_plan(mine)
