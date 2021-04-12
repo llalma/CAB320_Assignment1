@@ -788,11 +788,18 @@ def testMethod(mine, rollingSum, rollingPath, state=None):
                 if rollingPath[j] in actions:
                     del rollingPath[i:j]
                     del rollingSum[i:j]
-                    return testMethod(mine, rollingSum, rollingPath, state= np.array(mine.result(state, rollingPath[j])))
+                    return testMethod(mine, rollingSum, rollingPath, state= np.array(mine.result(state, rollingPath[i])))
                 #end
             #end
         else:
-            state = np.array(mine.result(state, rollingPath[i]))
+            tempState = np.array(mine.result(state.copy(), rollingPath[i]))
+            if not mine.is_dangerous(tempState):
+                state = tempState
+            else:
+                del rollingPath[i]
+                del rollingSum[i]
+            #end
+
         #end
     #end
 
@@ -966,9 +973,6 @@ def main():
     # print(best_action_list)
     # print(best_final_state)
     # print(best_payoff)
-
-    print(search_bb_dig_plan(mine))
-
 
     #
     s0 = [[1,0,0], [1,0,0], [0,0,0]]
