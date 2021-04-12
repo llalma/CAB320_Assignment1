@@ -281,6 +281,12 @@ class Mine(search.Problem):
         #   Really bad need to find a better way.
         ####################
 
+        if state.size == 0:
+            yield None
+        elif state.size == 1:
+            yield (0,0)
+        #end
+
         for x in range(0, self.len_x, 1):
             for y in range(0, self.len_y, 1):
                 validCheck = False
@@ -740,17 +746,14 @@ def search_bb_dig_plan(mine):
     # return
 
     # print(NewUnderground)
+    print(np.transpose(NewUnderground*100))
 
     return getMax(mine, NewUnderground)
 
 
-    return NewUnderground
 
 
-    # print(bbSearch(mine, mine.initial))
-    
-    # raise NotImplementedError
-#end
+
 
 def getMax(mine, newUnderground):
     state = mine.initial.copy()
@@ -860,7 +863,7 @@ def main():
     # y = np.array([[1, -6, 1, 1], [2, 5, 1, 1], [3, 6, 1, 1], [3, 6, 1, -10]])
     # z = np.array([[[1, 4, 1, 1], [2, 5, 1, 1], [3, 6, 1, 1]], x - 1])
 
-    mine = Mine(underground=v, dig_tolerance=1)
+    mine = Mine(underground=some_2d_underground_1, dig_tolerance=1)
 
     # best_action_list, best_payoff, best_final_state = search_bb_dig_plan(mine)
     best_action_list, best_payoff, best_final_state = search_bb_dig_plan(mine)
