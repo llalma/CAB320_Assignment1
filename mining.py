@@ -672,10 +672,9 @@ def search_bb_dig_plan(mine):
                 locTrack = loc[2]
 
             NewUndergroundBackTrack = NewUnderground.copy()
-
+            BackTrack = False
             if NewUnderground[loc] > 0 and loc[2] -1 >= 0:
                 OneUpUpdated = False
-                BackTrack = False
                 oneUp = (loc[0], loc[1], loc[2]-1)
                 if NewUnderground[oneUp] > -1:
                     tally = NewUnderground[loc]
@@ -699,12 +698,13 @@ def search_bb_dig_plan(mine):
                                 if locTrack == loc[2]:
                                     location += [tempLoc]
 
-
+                                if NewUnderground[tempLoc] > 0:
+                                    tally = 0
                                 tally = tally + NewUnderground[tempLoc]
-                                if tally < 0:
-                                    # BackTrack = True
-                                    pass
                                 NewUnderground[tempLoc] = tally
+
+
+
                             #end
                         #end
                     #end
@@ -816,14 +816,22 @@ def main():
     # print(my_team())
     #
     # v = np.array([[-1, -1, 12], [-1, -20, 4], [-1, -1, 12]])
-    v = np.array([[-1, -1, 10], [-1, 20, 4], [-1, -1, -1]])
+    # v = np.array([[-1, -1, 10], [-1, 20, 4], [-1, -1, -1]])
+    some_2d_underground_1 = np.array([
+        [0.175, -0.284, 0.026, -0.316],
+        [0.212, 0.088, 0.304, 0.604],
+        [-1.231, 1.558, -0.467, -0.371]])
+    # vDash = np.array([
+    #     [-0.814, 0.637, 1.824, -0.563],
+    #     [0.559, -0.234, -0.366, 0.07],
+    #     [0.175, -0.284, 0.026, -0.316]])
     # vDash = np.array([[-1, -1, 10, 5], [-1, -20, -4, -7], [-1, -1, -1, -21]])
     # # w = np.array([[1, 4], [2, 5], [3, 6]])
-    # # x = np.array([[1, 4, 1, 1], [2, 5, 1, 1], [3, 6, 1, -1]])
+    x = np.array([[-100, 4, 1, 1], [2, 5, 1, 1], [3, 6, 1, -1]])
     # y = np.array([[1, -6, 1, 1], [2, 5, 1, 1], [3, 6, 1, 1], [3, 6, 1, -10]])
-    # # z = np.array([[[1, 4, 1, 1], [2, 5, 1, 1], [3, 6, 1, 1]], x - 1])
+    # z = np.array([[[1, 4, 1, 1], [2, 5, 1, 1], [3, 6, 1, 1]], x - 1])
 
-    mine = Mine(underground=v, dig_tolerance=1)
+    mine = Mine(underground=some_2d_underground_1, dig_tolerance=1)
 
     # best_action_list, best_payoff, best_final_state = search_bb_dig_plan(mine)
     search_bb_dig_plan(mine)
