@@ -266,18 +266,15 @@ class Mine(search.Problem):
         Return a generator of valid actions in the give state 'state'
         An action is represented as a location. An action is deemed valid if
         it doesn't  break the dig_tolerance constraint.
-
         Parameters
         ----------
-        state : 
+        state :
             represented with nested lists, tuples or a ndarray
             state of the partially dug mine
-
         Returns
         -------
         a generator of valid actions
-
-        '''        
+        '''
         state = np.array(state)
 
         ####################
@@ -287,22 +284,24 @@ class Mine(search.Problem):
         for x in range(0, self.len_x, 1):
             for y in range(0, self.len_y, 1):
                 validCheck = False
-                for neighbour in self.surface_neigbhours((x,y)):
-                    g = self.getDepth(state, (x,y))
+                for neighbour in self.surface_neigbhours((x, y)):
+                    g = self.getDepth(state, (x, y))
                     h = self.getDepth(state, neighbour)
-                    if abs(self.getDepth(state, (x,y)) - self.getDepth(state, neighbour)) <= self.dig_tolerance and self.getDepth(state, (x,y)) < self.len_z:
+                    diff = self.getDepth(state, (x, y)) - self.getDepth(state, neighbour)
+                    if abs(diff) <= self.dig_tolerance and self.getDepth(state, (x, y)) < self.len_z and diff <= 0:
                         validCheck = True
                     else:
                         validCheck = False
                         break
-                    #end
-                #end
+                    # end
+                # end
 
                 if validCheck:
-                    yield (x,y)
-                #end
-            #end
-    #end
+                    yield (x, y)
+                # end
+            # end
+
+    # end
 
     def result(self, state, action):
         """Return the state that results from executing the given
@@ -700,52 +699,63 @@ def search_dp_dig_plan(mine):
     return best_payoff, find_action_sequence(np.zeros_like(best_final_state), best_final_state), np.sum(best_final_state, axis=2)
 #end
 
+#BB Approach
+def bbExapnded(mine, states, currBest=0):
 
-#BB Arroach
-def bbSearch(mine, state, loc=None, skipCol=None):
-    state = np.array(state)
+    outputStates = []
+    for state in states:
+        #Get list of actions
+        validActions = [a for a in mine.actions(state)]
 
-    gen = mine.actions(state)
-    childMax = 0
+        if len(validActions) > 0:
+            for a in validActions:
+                a = (a[0], a[1], int(np.sum(state[a])))
 
-    for child in gen:
-
-        child = (child[0], child[1], sum(state[child]))
-        if loc != None:
-            tempChildSum = bbSearch(mine, mine.result(state, child), child) + mine.underground[loc]
+                outputStates.append(np.array(mine.result(state, a)))
+            #end
         else:
-            tempChildSum = bbSearch(mine, mine.result(state, child), child)
-        #end
-
-        if tempChildSum > childMax:
-            childMax = tempChildSum
+            summedStates = map(lambda s: np.sum(s*mine.underground), states)
+            return states[np.argmax(summedStates)]
         #end
     #end
-    return childMax
+
+    summedStates = np.array(list(map(lambda s: np.sum(s * mine.underground), outputStates)))
+    truthStates = list(np.where(summedStates >= currBest, 1, 0))
+
+    # reduced = []
+    # for s, b in zip(outputStates,truthStates):
+    #     if b == 1:
+    #         reduced.append(s)
+    #     #end
+    # #end
+
+    # if len(reduced) > 0:
+    bestLowerState = bbExapnded(mine, outputStates, currBest=max(summedStates))
+    states.append(bestLowerState)
+    # #end
+
+    summedStates = list(map(lambda s: np.sum(s * mine.underground), states))
+    return states[np.argmax(summedStates)]
 #end
 
 def search_bb_dig_plan(mine):
     '''
-    Compute, using Branch and Bound, the most profitable sequence of 
+    Compute, using Branch and Bound, the most profitable sequence of
     digging actions from the initial state of the mine.
-        
-
     Parameters
     ----------
     mine : Mine
         An instance of a Mine problem.
-
     Returns
     -------
     best_payoff, best_action_list, best_final_state
-
     '''
+    state = mine.initial.copy()
 
-    print(bbSearch(mine, mine.initial))
-    
-    raise NotImplementedError
+    state = bbExapnded(mine, [state])
+
+    return np.sum(state * mine.underground), find_action_sequence(mine.initial.copy(), state), state
 #end
-
 
 #Extra Function
 def find_action_sequence(s0, s1):
@@ -827,42 +837,31 @@ def back2D(actions, state):
 #end
 
 
-
 def main():
     # print(my_team())
     #
+    b = np.array([[-1, -200, 1], [5, 8, 5]])
     v = np.array([[-1, -1, -1], [-1, 4, -1], [-1, -10, 11]])
-    # vDash = np.array([[-1, -1, 10, 5], [-1, -20, -4, -7], [-1, -1, -1, -21]])
-    # # w = np.array([[1, 4], [2, 5], [3, 6]])
+    vDash = np.array([[-1, -1, 10, 5], [-1, -20, -4, -7], [-1, -1, -1, -21]])
+    w = np.array([[1, 4], [2, 5], [3, 6]])
     x = np.array([[1, 4, 1, 1], [2, 5, 1, 1], [3, 6, 1, -1]])
-    # y = np.array([[1, -6, 1, 1], [2, 5, 1, 1], [3, 6, 1, 1], [3, 6, 1, -10]])
+    y = np.array([[1, -6, 1, 1], [2, 5, 1, 1], [3, 6, 1, 1], [3, 6, 1, -10]])
     z = np.array([[[1, 4, 1, 1], [2, 5, 1, 1], [3, 6, 1, 1]], x - 1])
 
     mine = Mine(underground=v, dig_tolerance=1)
-    #
-    # best_action_list, best_payoff, best_final_state = search_dp_dig_plan(mine)
-    #
-    # print(best_action_list)
-    # print(best_final_state)
-    # print(best_payoff)
 
-    # search_bb_dig_plan(mine)
+    print("########################\ndpMethod\n########################")
+    best_action_list, best_payoff, best_final_state = search_dp_dig_plan(mine)
+    print(best_action_list)
+    print(best_final_state)
+    print(best_payoff)
 
+    print("########################\nbbMethod\n########################")
 
-    #
-    s0 = [[1,0,0], [1,0,0], [0,0,0]]
-    s1 = [[1, 1, 0, 0], [1, 1, 0,0], [1, 1, 1,0], [1,1,1,1]]
-
-    s2_1 = [[1, 1, 1, 0], [1, 1, 1, 0], [1, 1, 0, 0], [1, 1, 0, 0]]
-    s2_2 = [[1, 1, 1, 0], [1, 1, 0, 0], [1, 1, 0, 0], [1, 1, 0, 0]]
-    s2_3 = [[1, 1, 1, 0], [1, 1, 0, 0], [0, 0, 0, 0], [1, 1, 0, 0]]
-    s2 = [s2_1, s2_2, s2_3]
-
-    # mine.plot_state(np.array(s1))
-
-    print(mine.is_dangerous(s0))
-
-    # print(find_action_sequence(s0,s1))
+    best_action_list, best_payoff, best_final_state = search_bb_dig_plan(mine)
+    print(best_action_list)
+    print(best_final_state)
+    print(best_payoff)
 
 #end
         
