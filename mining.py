@@ -708,7 +708,7 @@ def search_dp_dig_plan(mine):
 
 #BB Approach
 
-def bbExapnded(mine, states):
+def bbExapnded(mine, states, currBest=0):
 
     outputStates = []
     for state in states:
@@ -717,7 +717,7 @@ def bbExapnded(mine, states):
 
         if len(validActions) > 0:
             for a in validActions:
-                a = (a[0], a[1], np.sum(state[a]))
+                a = (a[0], a[1], int(np.sum(state[a])))
 
                 outputStates.append(np.array(mine.result(state, a)))
             #end
@@ -727,8 +727,20 @@ def bbExapnded(mine, states):
         #end
     #end
 
-    bestLowerState = bbExapnded(mine, outputStates)
-    states.append(bestLowerState)
+    summedStates = np.array(list(map(lambda s: np.sum(s * mine.underground), outputStates)))
+    truthStates = list(np.where(summedStates >= currBest, 1, 0))
+
+    reduced = []
+    for s, b in zip(outputStates,truthStates):
+        if b == 1:
+            reduced.append(s)
+        #end
+    #end
+
+    if len(reduced) > 0:
+        bestLowerState = bbExapnded(mine, reduced, currBest=max(summedStates))
+        states.append(bestLowerState)
+    #end
 
     summedStates = list(map(lambda s: np.sum(s * mine.underground), states))
     return states[np.argmax(summedStates)]
