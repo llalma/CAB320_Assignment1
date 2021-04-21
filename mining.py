@@ -707,106 +707,34 @@ def search_dp_dig_plan(mine):
 
 
 #BB Approach
-def getMaxSumOfColoumn(col):
-    maxSum = col[0]
-    maxIndex = 0
 
-    for i in range(1,len(col)+1):
-        tempSum = np.sum(col[0:i])
-        if tempSum > maxSum:
-            maxSum = tempSum
-            maxIndex = i
-        #end
-    #end
+def bbExapnded(mine, states):
 
-    return maxSum, maxIndex
-#end
+    outputStates = []
+    for state in states:
+        #Get list of actions
+        validActions = [a for a in mine.actions(state)]
 
-def getSummedCols(mine):
-    summedCols = mine.underground[:,:,0].copy()
+        if len(validActions) > 0:
+            for a in validActions:
+                a = (a[0], a[1], np.sum(state[a]))
 
-    #For each coloumn find the max possible value from it.
-    for x in range(mine.len_x):
-        for y in range(mine.len_y):
-            maxSum, maxIndex = getMaxSumOfColoumn(mine.underground[x,y])
-            summedCols[x,y] = maxSum
-        #end
-    #end
-
-    return summedCols
-#end
-
-def getMaxNode(summedCols, validCoords):
-    #Get max Node that is in valid coords
-    sortedSummedCols = np.dstack(np.unravel_index(np.flip(np.argsort(summedCols.ravel())), summedCols.shape))[0]
-    validCoords = [l[1] for l in validCoords]
-
-    #While the max value is not in valid list, go to 2nd max value until true, ect.
-    i = 0
-    while tuple(sortedSummedCols[i]) not in validCoords:
-        i+=1
-    #end
-
-    return tuple(sortedSummedCols[i]), summedCols[tuple(sortedSummedCols[i])]
-#end
-
-def getActions(mine, state):
-    state = np.array(state)
-
-    ####################
-    #   Really bad need to find a better way.
-    ####################
-
-    for x in range(0, mine.len_x, 1):
-        for y in range(0, mine.len_y, 1):
-            validCheck = False
-            for neighbour in mine.surface_neigbhours((x, y)):
-                g = mine.getDepth(state, (x, y))
-                h = mine.getDepth(state, neighbour)
-                diff = mine.getDepth(state, (x, y)) - mine.getDepth(state, neighbour)
-                if abs(diff) <= mine.dig_tolerance and mine.getDepth(state, (x, y)) < mine.len_z and diff <= 0:
-                    validCheck = True
-                else:
-                    validCheck = False
-                    break
-                # end
-            # end
-
-            if validCheck:
-                yield (x, y, int(np.sum(state[(x,y)])))
-            # end
-        # end
-# end
-#end
-
-def testMethod(mine, rollingSum, rollingPath, state=None):
-    for i in range(len(rollingSum)):
-        if rollingSum[i] < 0:
-            actions = [a for a in getActions(mine, state)]
-            for j in range(i+1, len(rollingSum)):
-                # loc = (rollingPath[j][0], rollingPath[j][1])
-                if rollingPath[j] in actions:
-                    del rollingPath[i:j]
-                    del rollingSum[i:j]
-                    return testMethod(mine, rollingSum, rollingPath, state= np.array(mine.result(state, rollingPath[i])))
-                #end
+                outputStates.append(np.array(mine.result(state, a)))
             #end
         else:
-            tempState = np.array(mine.result(state.copy(), rollingPath[i]))
-            if not mine.is_dangerous(tempState):
-                state = tempState
-            else:
-                del rollingPath[i]
-                del rollingSum[i]
-            #end
-
+            summedStates = map(lambda s: np.sum(s*mine.underground), states)
+            return states[np.argmax(summedStates)]
         #end
     #end
 
-    return rollingSum, rollingPath
+    bestLowerState = bbExapnded(mine, outputStates)
+    states.append(bestLowerState)
+
+    summedStates = list(map(lambda s: np.sum(s * mine.underground), states))
+    return states[np.argmax(summedStates)]
 #end
 
-def search_bb_dig_plan(mine, state=None):
+def search_bb_dig_plan(mine):
     '''
     Compute, using Branch and Bound, the most profitable sequence of
     digging actions from the initial state of the mine.
@@ -822,55 +750,11 @@ def search_bb_dig_plan(mine, state=None):
     best_payoff, best_action_list, best_final_state
 
     '''
+    state = mine.initial.copy()
 
-    rollingSum = []
-    rollingPath = []
+    state = bbExapnded(mine, [state])
 
-    maxSum = 0
-    maxPath = []
-
-    if state == None:
-        state = mine.initial.copy()
-    #end
-
-    summedCols = getSummedCols(mine)
-    while 0 in state:
-        diggableLocs = np.array([(mine.underground[(l[0],l[1],int(np.sum(state[l])))],l) for l in mine.actions(state)])
-
-        #Take any +ve value showing on surface
-        truth = list(map(lambda l: l[0] > 0, diggableLocs))
-        if True in truth:
-            digLoc = tuple(diggableLocs[truth.index(True)][1])
-        else:
-            #If there is not positive values showing gotta branch.
-            digLoc, maxSum = getMaxNode(summedCols, diggableLocs)
-        #end
-
-        digLoc3D = (digLoc[0], digLoc[1], int(np.sum(state[digLoc])))
-
-        #Add to ouput list
-        rollingSum.append(mine.underground[digLoc3D])
-        rollingPath.append(digLoc3D)
-
-        #Mine Location and update summedCols
-        state = np.array(mine.result(state, digLoc3D))
-        summedCols[digLoc] -= mine.underground[digLoc3D]
-    #end
-
-
-    rollingSum, rollingPath = testMethod(mine, rollingSum, rollingPath, state=mine.initial.copy())
-
-    tempSum, maxIndex = getMaxSumOfColoumn(rollingSum)
-    if tempSum > maxSum:
-        maxSum = tempSum
-        maxPath = rollingPath[0:maxIndex]
-    # end
-
-    fState = mine.results(mine.initial.copy(), maxPath)
-
-    #Right now produces correct result for 3d but not for 2d. Wrong as the test method does not check if other states become invalid
-
-    return maxSum, find_action_sequence(mine.initial.copy(),fState), fState
+    return np.sum(state * mine.underground), find_action_sequence(mine.initial.copy(), state), state
 #end
 
 
@@ -966,28 +850,20 @@ def main():
     y = np.array([[1, -6, 1, 1], [2, 5, 1, 1], [3, 6, 1, 1], [3, 6, 1, -10]])
     z = np.array([[[1, 4, 1, 1], [2, 5, 1, 1], [3, 6, 1, 1]], x - 1])
 
-    mine = Mine(underground=v, dig_tolerance=1)
-    #
-    # best_action_list, best_payoff, best_final_state = search_dp_dig_plan(mine)
-    #
-    # print(best_action_list)
-    # print(best_final_state)
-    # print(best_payoff)
+    mine = Mine(underground=y, dig_tolerance=1)
 
-    #
-    s0 = [[1,0,0], [1,0,0], [0,0,0]]
-    s1 = [[1, 1, 0, 0], [1, 1, 0,0], [1, 1, 1,0], [1,1,1,1]]
+    print("########################\ndpMethod\n########################")
+    best_action_list, best_payoff, best_final_state = search_dp_dig_plan(mine)
+    print(best_action_list)
+    print(best_final_state)
+    print(best_payoff)
 
-    s2_1 = [[1, 1, 1, 0], [1, 1, 1, 0], [1, 1, 0, 0], [1, 1, 0, 0]]
-    s2_2 = [[1, 1, 1, 0], [1, 1, 0, 0], [1, 1, 0, 0], [1, 1, 0, 0]]
-    s2_3 = [[1, 1, 1, 0], [1, 1, 0, 0], [0, 0, 0, 0], [1, 1, 0, 0]]
-    s2 = [s2_1, s2_2, s2_3]
+    print("########################\nbbMethod\n########################")
 
-    # mine.plot_state(np.array(s1))
-
-    # print(mine.is_dangerous(s0))
-
-    # print(find_action_sequence(s0,s1))
+    best_action_list, best_payoff, best_final_state = search_bb_dig_plan(mine)
+    print(best_action_list)
+    print(best_final_state)
+    print(best_payoff)
 
 #end
 
