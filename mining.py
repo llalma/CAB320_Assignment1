@@ -748,30 +748,28 @@ def findBlockerCells(mine, state, action, recursiveCount=0):
 def bbExapnded(mine, states, bestFoundState, bestFoundSum):
     outputStates = {}
 
+    #Check a state does exist, base case for branching.
     if states == []:
         return bestFoundSum, bestFoundState
     #end
 
     #Find children of current depth of tree
     for state in states:
+        stateSum = np.sum(state*mine.underground)
         # Update best found state if it is better
-        if np.sum(state*mine.underground) > bestFoundSum:
+        if stateSum > bestFoundSum:
             bestFoundState = state
-            bestFoundSum =np.sum(state*mine.underground)
+            bestFoundSum = np.sum(state*mine.underground)
         #end
 
         bestCols = findOptimalColHeight(mine, state)
 
-        # if (bestCols == np.zeros((mine.len_x, mine.len_y))).all():
-        #     return bestFoundSum, bestFoundState
-        # #end
-
-        if np.sum(state * mine.underground) + np.sum(bestCols) > bestFoundSum:
-            #Loop through valid actions for a state
+        if stateSum + np.sum(bestCols) > bestFoundSum:
+            #Loop through valid actions for a state and branch from them
             for a in mine.actions(state):
                 a = (a[0], a[1], int(np.sum(state[a])))
                 nextState = np.array(mine.result(state, a))
-                outputStates[hash(str(nextState))] =nextState
+                outputStates[hash(str(nextState))] = nextState
             #end
         #end
     #end
