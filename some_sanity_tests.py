@@ -181,6 +181,6 @@ def test_3D_search_dig_plan():
 if __name__=='__main__':
     pass
     print('= '*20)
-    test_2D_search_dig_plan()
+    # test_2D_search_dig_plan()
     print('= '*20)
     test_3D_search_dig_plan()

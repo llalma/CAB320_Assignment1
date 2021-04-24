@@ -696,43 +696,96 @@ def search_dp_dig_plan(mine):
 
     best_payoff, best_action_list, best_final_state = searchRec(mine, mine.initial)
 
-    return best_payoff, find_action_sequence(np.zeros_like(best_final_state), best_final_state), np.sum(best_final_state, axis=2)
+    return best_payoff, find_action_sequence(np.zeros_like(best_final_state), best_final_state), best_final_state #np.sum(best_final_state, axis=2)
 #end
 
 #BB Approach
-def bbExapnded(mine, states, currBest=0):
 
-    outputStates = []
+def findOptimalColHeight(mine, state):
+    bestCols = np.zeros((mine.len_x, mine.len_y))
+
+    statedUnderground = mine.underground * abs(state-1)
+
+    for x in range(mine.len_x):
+        for y in range(mine.len_y):
+
+            for z in range(1, mine.len_z+1):
+                tempSum = np.sum(statedUnderground[(x, y)][0:z])
+                if tempSum > bestCols[(x,y)]:
+                    bestCols[(x,y)] = tempSum
+                #end
+            #end
+        #end
+    #end
+
+    return bestCols
+#end
+
+def findBlockerCells(mine, state, action, recursiveCount=0):
+
+    neighbours = mine.surface_neigbhours((action[0], action[1]))
+    neighbourDepth = [int(np.sum(state[n])) for n in mine.surface_neigbhours((action[0], action[1]))]
+
+    outputNeighborus = list(map(lambda i: neighbours[i[0]], np.argwhere(neighbourDepth == np.min(neighbourDepth))))
+    validActions = [a for a in mine.actions(state)]
+    outpuArr = []
+
+    for i, n in enumerate(outputNeighborus):
+        if (n[0],n[1]) not in validActions:
+            #Remove neighbour which cannot be mined
+            outputNeighborus.remove(n)
+
+            #Find its blockers and add to list
+            outpuArr += findBlockerCells(mine, state, n, recursiveCount+1)
+        else:
+            outpuArr.append((n[0], n[1], int(np.sum(state[n]))))
+        #end
+    #end
+
+    return outpuArr
+#end
+
+def bbExapnded(mine, states):
+    outputStates = {}
+
     for state in states:
-        #Get list of actions
+        bestCols = findOptimalColHeight(mine, state)
+
+        actionList = list(map(lambda x: tuple(x), np.argwhere(bestCols > 0)))
         validActions = [a for a in mine.actions(state)]
 
-        if len(validActions) > 0:
-            for a in validActions:
+        if len(actionList) > 0:
+            for a in actionList:
                 a = (a[0], a[1], int(np.sum(state[a])))
 
-                outputStates.append(np.array(mine.result(state, a)))
+                #See if a is a valid action, if it is use that.
+                if (a[0], a[1]) in validActions:
+
+                    updatedTempState = np.array(mine.result(state, a))
+                    if hash(str(updatedTempState)) not in outputStates:
+                        outputStates[hash(str(updatedTempState))] = updatedTempState
+                    #end
+                else:
+                    # If A is not a valid action, get the cells blocking it and test them
+                    blockerCells = findBlockerCells(mine, state, a)
+                    for c in blockerCells:
+
+                        updatedTempState = np.array(mine.result(state, c))
+                        if hash(str(updatedTempState)) not in outputStates:
+                            outputStates[hash(str(updatedTempState))] = updatedTempState
+                        #end
+                    #end
+                #end
             #end
+
         else:
             summedStates = map(lambda s: np.sum(s*mine.underground), states)
             return states[np.argmax(summedStates)]
         #end
     #end
 
-    summedStates = np.array(list(map(lambda s: np.sum(s * mine.underground), outputStates)))
-    truthStates = list(np.where(summedStates >= currBest, 1, 0))
-
-    # reduced = []
-    # for s, b in zip(outputStates,truthStates):
-    #     if b == 1:
-    #         reduced.append(s)
-    #     #end
-    # #end
-
-    # if len(reduced) > 0:
-    bestLowerState = bbExapnded(mine, outputStates, currBest=max(summedStates))
-    states.append(bestLowerState)
-    # #end
+    temp = bbExapnded(mine, list(outputStates.values()))
+    states.append(temp)
 
     summedStates = list(map(lambda s: np.sum(s * mine.underground), states))
     return states[np.argmax(summedStates)]
@@ -848,7 +901,7 @@ def main():
     y = np.array([[1, -6, 1, 1], [2, 5, 1, 1], [3, 6, 1, 1], [3, 6, 1, -10]])
     z = np.array([[[1, 4, 1, 1], [2, 5, 1, 1], [3, 6, 1, 1]], x - 1])
 
-    mine = Mine(underground=v, dig_tolerance=1)
+    mine = Mine(underground=x, dig_tolerance=1)
 
     print("########################\ndpMethod\n########################")
     best_action_list, best_payoff, best_final_state = search_dp_dig_plan(mine)
