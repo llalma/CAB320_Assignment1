@@ -281,6 +281,11 @@ class Mine(search.Problem):
         #   Really bad need to find a better way.
         ####################
 
+        if state.size == 0:
+            yield None
+        elif state.size == 1:
+            yield (0, 0)
+        # end
         for x in range(0, self.len_x, 1):
             for y in range(0, self.len_y, 1):
                 validCheck = False
@@ -300,7 +305,6 @@ class Mine(search.Problem):
                     yield (x, y)
                 # end
             # end
-
     # end
 
     def result(self, state, action):
@@ -407,7 +411,7 @@ class Mine(search.Problem):
         # convert to np.array in order to use tuple addressing
         # state[loc]   where loc is a tuple
 
-        return sum(state * self.underground)
+        return np.sum(state * self.underground)
     #end
 
     def checkShiftedArrays(self, data1, data2):
@@ -867,10 +871,6 @@ def main():
     z = np.array([[[1, 4, 1, 1], [2, 5, 1, 1], [3, 6, 1, 1]], x - 1])
 
     mine = Mine(underground=v, dig_tolerance=1)
-
-    tempState = np.array([[1,1,1], [1,1,1], [0,0,0]])
-    print(mine.is_dangerous(tempState))
-    print(tempState)
 
     print("########################\ndpMethod\n########################")
     best_action_list, best_payoff, best_final_state = search_dp_dig_plan(mine)
