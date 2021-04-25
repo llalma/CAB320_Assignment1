@@ -293,7 +293,7 @@ class Mine(search.Problem):
                     g = self.getDepth(state, (x, y))
                     h = self.getDepth(state, neighbour)
                     diff = self.getDepth(state, (x, y)) - self.getDepth(state, neighbour)
-                    if abs(diff) <= self.dig_tolerance and self.getDepth(state, (x, y)) < self.len_z and diff <= 0:
+                    if abs(diff) <= self.dig_tolerance and self.getDepth(state, (x, y)) < self.len_z:
                         validCheck = True
                     else:
                         validCheck = False

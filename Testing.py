@@ -3,6 +3,8 @@ import random as rand
 import numpy as np
 import time
 
+from mining import getRingCoords, getParentsSum, searchRec, search_dp_dig_plan ,findOptimalColHeight, search_bb_dig_plan, find_action_sequence
+
 
 def test1():
     # Test for runtime, can handle 15x15x15 in less than a minute
@@ -202,7 +204,7 @@ def is_dangerousTest():
     state = np.expand_dims(state, 1)
 
 
-    expected = False
+    expected = True
     actual = mine.is_dangerous(state)
     print(actual)
 
@@ -212,19 +214,168 @@ def is_dangerousTest():
 
 def back2DTest():
     input = np.array([[-2, -1, 10], [-1, 20, 7], [-1, -1, -1]])
-    mine = mining.Mine(underground = input)
-    # [(0, 0), (0, 1), (0, 2), (1, 0), (1, 1), (1, 2)]
-    state = np.array([[1, 1, 1], [1, 1, 1], [0, 0, 0]])
+    mine = mining.Mine(input)
+    action = [(0, 0), (0, 1), (0, 2), (1, 0), (1, 1), (1, 2)]
+    state = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
     state = np.expand_dims(state, 1)
 
 
-    expected = False
-    actual = mine.back2D(state)
-    print(actual)
+    # expected = False
+    [actualaction,actualstate]  = mine.back2D(action,state)
+    print(actualaction)
+    print(actualstate)
+    # assert actual == expected
 
+# end
+
+
+def validCoordsTest():
+    input = np.array([[-2, -1, 10], [-1, 20, 7], [-1, -1, -1]])
+    mine = mining.Mine(input)
+
+    expected = False
+    actual = mine.validCoords((-1,-1,-1))
+    assert actual == expected
+
+    expected = True
+    actual = mine.validCoords((0,0,0))
+    assert actual == expected
+
+    expected = True
+    actual = mine.validCoords((2,0,2))
+    assert actual == expected
+
+    expected = False
+    actual = mine.validCoords((2,1,2))
     assert actual == expected
 
 # end
+
+def validCoordsTest3D():
+
+    x = np.array([[1, 4, 1, 1], [2, 5, 1, 1], [3, 6, 1, -1]])
+    input = np.array([[[1, 4, 1, 1], [2, 5, 1, 1], [3, 6, 1, 1]], x - 1])
+    mine = mining.Mine(input)
+
+    expected = False
+    actual = mine.validCoords((-1,-1,-1))
+    assert actual == expected
+
+    expected = True
+    actual = mine.validCoords((0,0,0))
+    assert actual == expected
+
+    expected = False
+    actual = mine.validCoords((2,0,2))
+    assert actual == expected
+
+    expected = False
+    actual = mine.validCoords((2,1,2))
+    assert actual == expected
+
+    expected = False
+    actual = mine.validCoords((2,10,2))
+    assert actual == expected
+
+# end
+
+def getRingCoords2DTest():
+
+
+    input = np.array([[-2, -1, 10], [-1, 20, 7], [-1, -1, -1]])
+    mine = mining.Mine(input)
+
+    expected = [(2, 0, 0), (0, 0, 0)]
+    actual = getRingCoords(mine,(1,0,1))
+    assert actual == expected
+
+
+    expected = [(2, 0, 0), (1, 0, 0),(0, 0, 0)]
+    actual = getRingCoords(mine,(1,1,1))
+    assert actual == expected
+
+
+    expected = []
+    actual = getRingCoords(mine,(-1,0,0))
+    assert actual == expected
+
+
+# end
+
+
+def getRingCoords3DTest():
+
+
+    x = np.array([[1, 4, 1, 1], [2, 5, 1, 1], [3, 6, 1, -1]])
+    input = np.array([[[1, 4, 1, 1], [2, 5, 1, 1], [3, 6, 1, 1]], x - 1])
+    mine = mining.Mine(input)
+
+    expected = [(1, 1, 0), (0, 2, 0), (0, 1, 0)]
+    actual = getRingCoords(mine,(1,2,1))
+    assert actual == expected
+
+
+    expected = [(1, 2, 0), (1, 0, 0), (0, 2, 0), (0, 1, 0), (0, 0, 0)]
+    actual = getRingCoords(mine,(1,1,1))
+    assert actual == expected
+
+
+    expected = []
+    actual = getRingCoords(mine,(-1,0,0))
+    assert actual == expected
+
+
+# end
+
+
+
+def getParentsSumTest2D():
+
+
+    input = np.array([[-1, -1, -1], [-1, 4, -1], [-1, -10, 11]])
+    mine = mining.Mine(input)
+
+    state = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
+    state = np.expand_dims(state, 1)
+    coords = (1,0,0)
+    prevSeenLocs = {}
+
+    expectedsum = -1
+    expectedPath = [(1, 0, 0)]
+    Sum, Path = getParentsSum(mine,state, coords, prevSeenLocs)
+
+
+
+    assert expectedsum == Sum
+    assert expectedPath == Path
+
+
+# end
+
+
+def getParentsSumTest2D():
+
+
+    input = np.array([[-1, -1, -1], [-1, 4, -1], [-1, -10, 11]])
+    mine = mining.Mine(input)
+
+    state = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
+    state = np.expand_dims(state, 1)
+    coords = (1,0,0)
+    prevSeenLocs = {}
+
+    expectedsum = -1
+    expectedPath = [(1, 0, 0)]
+    Sum, Path = getParentsSum(mine,state, coords, prevSeenLocs)
+
+
+
+    assert expectedsum == Sum
+    assert expectedPath == Path
+
+
+# end
+
 
 def main():
     # test1()
@@ -238,7 +389,13 @@ def main():
     # resultTest()
     # resultsTest()
     # payoffTest()
-    is_dangerousTest()
+    # is_dangerousTest()
+    # back2DTest()
+    # validCoordsTest()
+    # validCoordsTest3D()
+    # getRingCoords2DTest()
+    # getRingCoords3DTest()
+    getParentsSumTest2D()
 # end
 
 if __name__ == "__main__":
