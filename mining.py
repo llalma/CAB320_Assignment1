@@ -535,7 +535,7 @@ def getRingCoords(mine, loc):
     """
     outputCoords = []
 
-    #Check the rig coords are within the mine.
+    #Check the ring coords are within the mine.
     if (loc[2]-mine.dig_tolerance >= 0):
 
         #Loop though a 3x3 grid of x and y values
@@ -721,30 +721,6 @@ def findOptimalColHeight(mine, state):
     return bestCols
 #end
 
-def findBlockerCells(mine, state, action, recursiveCount=0):
-
-    neighbours = mine.surface_neigbhours((action[0], action[1]))
-    neighbourDepth = [int(np.sum(state[n])) for n in mine.surface_neigbhours((action[0], action[1]))]
-
-    outputNeighborus = list(map(lambda i: neighbours[i[0]], np.argwhere(neighbourDepth == np.min(neighbourDepth))))
-    validActions = [a for a in mine.actions(state)]
-    outpuArr = []
-
-    for i, n in enumerate(outputNeighborus):
-        if (n[0],n[1]) not in validActions:
-            #Remove neighbour which cannot be mined
-            outputNeighborus.remove(n)
-
-            #Find its blockers and add to list
-            outpuArr += findBlockerCells(mine, state, n, recursiveCount+1)
-        else:
-            outpuArr.append((n[0], n[1], int(np.sum(state[n]))))
-        #end
-    #end
-
-    return outpuArr
-#end
-
 def bbExapnded(mine, states, bestFoundState, bestFoundSum):
     outputStates = {}
 
@@ -794,8 +770,7 @@ def search_bb_dig_plan(mine):
     bestFoundState = mine.initial.copy()
     bestFoundSum = 0
 
-    state = mine.initial.copy()
-    bestFoundSum, bestFoundState = bbExapnded(mine, [state], bestFoundState, bestFoundSum)
+    bestFoundSum, bestFoundState = bbExapnded(mine, [bestFoundState], bestFoundState, bestFoundSum)
 
     return bestFoundSum, find_action_sequence(mine.initial.copy(), bestFoundState), bestFoundState
 #end
@@ -891,7 +866,11 @@ def main():
     y = np.array([[1, -6, 1, 1], [2, 5, 1, 1], [3, 6, 1, 1], [3, 6, 1, -10]])
     z = np.array([[[1, 4, 1, 1], [2, 5, 1, 1], [3, 6, 1, 1]], x - 1])
 
-    mine = Mine(underground=b, dig_tolerance=1)
+    mine = Mine(underground=v, dig_tolerance=1)
+
+    tempState = np.array([[1,1,1], [1,1,1], [0,0,0]])
+    print(mine.is_dangerous(tempState))
+    print(tempState)
 
     print("########################\ndpMethod\n########################")
     best_action_list, best_payoff, best_final_state = search_dp_dig_plan(mine)
