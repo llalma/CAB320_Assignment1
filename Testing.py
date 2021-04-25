@@ -226,6 +226,36 @@ def back2DTest():
 
 # end
 
+def compareTest():
+    numTries = rand.randint(5,10)
+    outputList = []
+
+    for _ in range(numTries):
+        if rand.choice([True, False]):
+            #2D mine test
+            size = tuple(np.random.randint(1, 3, (2)))
+        else:
+            #3D mine test
+            size = tuple(np.random.randint(1, 3, (3)))
+        #end
+
+        digTolerance = rand.randint(1,10)
+        underground = np.random.randint(-10, 10, size)
+
+        mine = mining.Mine(underground, digTolerance)
+
+        dpResult = mining.search_dp_dig_plan(mine)
+        bbResults = mining.search_bb_dig_plan(mine)
+
+        outputList.append(str(dpResult) == str(bbResults))
+
+        if outputList[-1] != True:
+            print("")
+    #end
+
+    assert(False not in outputList)
+#end
+
 def main():
     # test1()
     # test2()
@@ -238,7 +268,8 @@ def main():
     # resultTest()
     # resultsTest()
     # payoffTest()
-    is_dangerousTest()
+    # is_dangerousTest()
+    compareTest()
 # end
 
 if __name__ == "__main__":

@@ -198,7 +198,6 @@ class Mine(search.Problem):
         self.len_x, self.len_y, self.len_z = self.underground.shape
     #end
 
-
     def surface_neigbhours(self, loc):
         '''
         Return the list of neighbours of loc
@@ -293,11 +292,16 @@ class Mine(search.Problem):
             for y in range(0, self.len_y, 1):
 
                 validCheck = False
-                for neighbour in self.surface_neigbhours((x, y)):
+                neighbours = self.surface_neigbhours((x, y))
+                if len(neighbours) <= 0:
+                    validCheck = True
+                #end
+
+                for neighbour in neighbours:
                     diff = self.getDepth(state, (x, y)) - self.getDepth(state, neighbour)   #Get ther depth difference between current cell and neighbour
 
                     #Check the difference does not break the dig tolerance
-                    if abs(diff) <= self.dig_tolerance and self.getDepth(state, (x, y)) < self.len_z and diff <= 0:
+                    if abs(diff) <= self.dig_tolerance and self.getDepth(state, (x, y)) < self.len_z and diff+1 <= self.dig_tolerance:
                         validCheck = True
                     else:
                         validCheck = False
@@ -330,12 +334,13 @@ class Mine(search.Problem):
 
         new_state = np.array(state)  # Make a copy
         for action in actions:
-            new_state[action] += 1
+            if self.validCoords(action):
+                new_state[action] += 1
 
-            #Remove it from dict as it will never be used again
-            if action in prevSeenLocs:
-                del prevSeenLocs[action]
-            #end
+                #Remove it from dict as it will never be used again
+                if action in prevSeenLocs:
+                    del prevSeenLocs[action]
+                #end
         #end
         return new_state
     #end
@@ -772,6 +777,7 @@ def bbExapnded(mine, states, bestFoundState, bestFoundSum):
         #Check the state has a possoiblity of being better than the bestFoundState
         if stateSum + np.sum(bestCols) > bestFoundSum:
             #Loop through valid actions for a state and branch from them
+            f = [a for a in mine.actions(state)]
             for a in mine.actions(state):
                 a = (a[0], a[1], int(np.sum(state[a])))
                 nextState = np.array(mine.result(state, a))
@@ -838,6 +844,11 @@ def find_action_sequence(s0, s1):
     s0 = np.array(s0)
     s1 = np.array(s1)
 
+    #Edge case if arrays are identical
+    if np.array_equal(s0, s1):
+        return []
+    #end
+
     outputActionList = []
 
     #Convert 2D mines to 3D mines and set flag to convert back.
@@ -887,6 +898,8 @@ def formatResults(mine, state, actions):
 
 def main():
     # print(my_team())
+
+    tempArr = np.array([[5,6]])
 
     b = np.array([[-1, -200, 1], [5, 8, 5]])
     v = np.array([[-1, -1, -1], [-1, 4, -1], [-1, -10, 11]])
