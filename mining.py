@@ -610,15 +610,14 @@ def getParentsSum(mine, state, loc, prevSeenLocs):
         #end
     #end
 
-
-    # for l in addLaterList:
-    #     prevSeenLocs[(l)]["Sum"] += mine.underground[loc]
-    # #end
-
-    for loc in outputPath:
-        if state[loc] == 0:
-            outputSum += mine.underground[loc]
+    for l in outputPath:
+        if state[l] == 0:
+            outputSum += mine.underground[l]
         #end
+    #end
+
+    for l in addLaterList:
+        prevSeenLocs[l]['Sum'] += mine.underground[loc]
     #end
 
     #Add to Dict to Use later, instead of calcing again
@@ -939,7 +938,7 @@ def formatResults(mine, state, actions):
 def main():
     # print(my_team())
 
-    tempArr = np.array([[-1 ,-4 , 6], [-7 , 3 ,-1]])
+    tempArr = np.array([[-7 , 6 , 2 , 8], [-3, -7  ,5  ,1]])
 
     b = np.array([[-1, -200, 1], [5, 8, 5]])
     v = np.array([[-1, -1, -1], [-1, 4, -1], [-1, -10, 11]])
@@ -949,7 +948,7 @@ def main():
     y = np.array([[1, -6, 1, 1], [2, 5, 1, 1], [3, 6, 1, 1], [3, 6, 1, -10]])
     z = np.array([[[1, 4, 1, 1], [2, 5, 1, 1], [3, 6, 1, 1]], x - 1])
 
-    mine = Mine(underground=tempArr, dig_tolerance=3)
+    mine = Mine(underground=tempArr, dig_tolerance=2)
 
     print(mine.underground)
 
