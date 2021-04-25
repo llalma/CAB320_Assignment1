@@ -182,4 +182,4 @@ if __name__=='__main__':
     print('= '*20)
     test_2D_search_dig_plan()
     print('= '*20)
-    test_3D_search_dig_plan()
+    # test_3D_search_dig_plan()
