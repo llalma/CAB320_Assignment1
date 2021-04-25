@@ -74,7 +74,7 @@ def actions2DTest():
     mine = mining.Mine(input)
 
     state = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
-    state = np.expand_dims(state, 1)
+    #state = np.expand_dims(state, 1)
     expectedActions = [(0, 0),(1, 0),(2, 0)]
     actualActions = mine.actions(state)
 
@@ -92,7 +92,7 @@ def actions3DTest():
 
         y = np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
         state = np.array([[[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], y ])
-        # state = np.expand_dims(state, 1)
+        # #state = np.expand_dims(state, 1)
         actualActions = mine.actions(state)
         expectedActions = [(0, 0),(0, 1),(0, 2),(1, 0),(1, 1),(1, 2)]
 
@@ -105,7 +105,7 @@ def emptyTupleTest():
     mine = mining.Mine(input)
 
     state = np.array([[]])
-    state = np.expand_dims(state, 1)
+    #state = np.expand_dims(state, 1)
     expectedActions = None
     actualActions = mine.actions(state)
 
@@ -121,7 +121,7 @@ def oneTupleValueTest():
     input = np.array([[33]])
     mine = mining.Mine(input)
     state = np.array([[0]])
-    state = np.expand_dims(state, 1)
+    #state = np.expand_dims(state, 1)
     expectedActions = [(0,0)]
     actualActions = mine.actions(state)
 
@@ -139,7 +139,7 @@ def resultTest():
     mine = mining.Mine(input)
 
     state = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
-    state = np.expand_dims(state, 1)
+    #state = np.expand_dims(state, 1)
     expectedActions = ((np.array([1, 1, 1]),), (np.array([0, 0, 0]),), (np.array([0, 0, 0]),))
 
     actualActions = mine.result(state,(0, 0))
@@ -153,7 +153,7 @@ def resultsTest():
     mine = mining.Mine(input)
 
     state = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
-    state = np.expand_dims(state, 1)
+    #state = np.expand_dims(state, 1)
     expectedActions = [[[2, 2, 2]],[[0, 0, 0]],[[0, 0, 0]]]
 
     actualActions = mine.results(state,(0, 0))
@@ -168,7 +168,7 @@ def payoffTest():
     mine = mining.Mine(input)
 
     state = np.array([[1, 1, 1], [1, 1, 1], [0, 0, 0]])
-    state = np.expand_dims(state, 1)
+    #state = np.expand_dims(state, 1)
 
 
     expectedValue = 33
@@ -184,7 +184,7 @@ def is_dangerousTest():
     mine = mining.Mine(underground = input, dig_tolerance=1)
 
     state = np.array([[1, 1, 1], [1, 1, 1], [0, 0, 0]])
-    state = np.expand_dims(state, 1)
+    #state = np.expand_dims(state, 1)
 
 
     expected = False
@@ -201,7 +201,7 @@ def is_dangerousTest():
     mine = mining.Mine(underground = input, dig_tolerance=1)
 
     state = np.array([[1, 1, 1], [1, 1, 1], [0, 0, 0]])
-    state = np.expand_dims(state, 1)
+    #state = np.expand_dims(state, 1)
 
 
     expected = True
@@ -217,7 +217,7 @@ def back2DTest():
     mine = mining.Mine(input)
     action = [(0, 0), (0, 1), (0, 2), (1, 0), (1, 1), (1, 2)]
     state = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
-    state = np.expand_dims(state, 1)
+    #state = np.expand_dims(state, 1)
 
 
     # expected = False
@@ -303,13 +303,14 @@ def getRingCoords2DTest():
 # end
 
 def compareTest():
-    numTries = rand.randint(5,10)
+    numTries = 2000 #rand.randint(5,10)
     outputList = []
 
     for _ in range(numTries):
+        print(_)
         if rand.choice([True, False]):
             #2D mine test
-            size = tuple(np.random.randint(1, 3, (2)))
+            size = tuple(np.random.randint(1, 5, (2)))
         else:
             #3D mine test
             size = tuple(np.random.randint(1, 3, (3)))
@@ -327,6 +328,7 @@ def compareTest():
 
         if outputList[-1] != True:
             print("")
+            dpResult = mining.search_dp_dig_plan(mine)
     #end
 
     assert(False not in outputList)
@@ -366,7 +368,7 @@ def getParentsSumTest2D():
     mine = mining.Mine(input)
 
     state = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
-    state = np.expand_dims(state, 1)
+    #state = np.expand_dims(state, 1)
     coords = (1,0,0)
     prevSeenLocs = {}
 
@@ -390,7 +392,7 @@ def getParentsSumTest2D():
     mine = mining.Mine(input)
 
     state = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
-    state = np.expand_dims(state, 1)
+    #state = np.expand_dims(state, 1)
     coords = (1,0,0)
     prevSeenLocs = {}
 
@@ -427,7 +429,9 @@ def main():
     # validCoordsTest3D()
     # getRingCoords2DTest()
     # getRingCoords3DTest()
-    getParentsSumTest2D()
+    # getParentsSumTest2D()
+
+    print("Finished all tests with no errors")
 # end
 
 if __name__ == "__main__":

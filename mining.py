@@ -587,7 +587,7 @@ def getParentsSum(mine, state, loc, prevSeenLocs):
     aboveCellCoords = (loc[0], loc[1], loc[2] - 1)  # The cell directly above specifed loc.
     ringCoords = getRingCoords(mine, loc)
 
-    outputSum = mine.underground[loc]
+    outputSum = 0
     outputPath = [loc]
 
     #Cell has been previosuly calculated, return that instead
@@ -599,13 +599,27 @@ def getParentsSum(mine, state, loc, prevSeenLocs):
     for coords in [aboveCellCoords] + ringCoords:
         if mine.validCoords(coords) and state[coords] == 0:
             tempSum, tempPath = getParentsSum(mine,state,coords,prevSeenLocs)
-            outputSum += tempSum
-            outputPath = tempPath + outputPath
+
+            outputPath += list(set(tempPath) - set(outputPath))
+
+            #Add current value to parents, so values below it can stack together
+            if mine.underground[loc] > 0:
+                prevSeenLocs[(coords)]["Sum"] += mine.underground[loc]
+            #end
         #end
     #end
 
+    tempPath = outputPath.copy()
+    tempPath.remove(loc)
+    for l in tempPath:
+        try:
+            outputSum += prevSeenLocs[(l)]["Sum"]
+        except:
+            outputSum += mine.underground[l]
+    #end
+
     #Add to Dict to Use later, instead of calcing again
-    prevSeenLocs[loc] = {"Sum":outputSum, "Path":outputPath}
+    prevSeenLocs[loc] = {"Sum":outputSum+mine.underground[loc], "Path":outputPath}
 
     return outputSum, outputPath
 #end
@@ -652,7 +666,7 @@ def searchRec(mine, state, prevSeenLocs = {}, minePath=[], mineSum=[]):
         #end
 
         #If the sum of a loc is greater than 0, it will be worth to dig.
-        if s > 0:
+        if s >= 0:
             mineSum += [s]
 
             # Find the difference between the sets, so a cell is not dug multiple times. Only add the diff to
@@ -665,13 +679,20 @@ def searchRec(mine, state, prevSeenLocs = {}, minePath=[], mineSum=[]):
 
             #Recursivally call function to optimize mine, Can ignore first 2 outputs as they are only returing
             #values to top function
-            _,_,state = searchRec(mine, np.array(state), minePath=minePath, mineSum=mineSum)
+            _,_,state = searchRec(mine, np.array(state), prevSeenLocs=prevSeenLocs, minePath=minePath, mineSum=mineSum)
             break
         #end
     #end
 
     #Return the values.
-    return np.sum(mine.underground * state), minePath, state
+    outputSum = np.sum(mine.underground * state)
+
+    #If value is ever below 0. dont mine anything instead
+    if outputSum < 0:
+        return 0, [], mine.initial.copy()
+    #end
+
+    return outputSum, minePath, state
 #end
 
 def search_dp_dig_plan(mine):
@@ -692,7 +713,7 @@ def search_dp_dig_plan(mine):
 
     '''
 
-    best_payoff, best_action_list, best_final_state = searchRec(mine, mine.initial.copy(), mineSum=[], minePath=[])
+    best_payoff, best_action_list, best_final_state = searchRec(mine, mine.initial.copy(), prevSeenLocs={}, mineSum=[], minePath=[])
     best_action_list = find_action_sequence(mine.initial.copy(), best_final_state)
 
     # Removes z component from actions and removes the Y dimension if one was added intially.
@@ -877,7 +898,20 @@ def find_action_sequence(s0, s1):
 #end
 
 def formatResults(mine, state, actions):
+    """
+    Removes Y components from state and actions if one was added durning init
+    Removes Z components from actions to allign with exaple data.
 
+    Parameters
+    ----------
+    mine : An instance of Mine
+    state : A valid mine state
+    actions : List of action in form of (x,y,z)
+
+    Returns
+    -------
+    state, actions
+    """
     if mine.flag2D:
         # We added a y dimension, so need to remove it.
         state = np.squeeze(state)
@@ -899,7 +933,7 @@ def formatResults(mine, state, actions):
 def main():
     # print(my_team())
 
-    tempArr = np.array([[5,6]])
+    tempArr = np.array([[-6 , 3], [ 0 , 2]])
 
     b = np.array([[-1, -200, 1], [5, 8, 5]])
     v = np.array([[-1, -1, -1], [-1, 4, -1], [-1, -10, 11]])
@@ -909,7 +943,7 @@ def main():
     y = np.array([[1, -6, 1, 1], [2, 5, 1, 1], [3, 6, 1, 1], [3, 6, 1, -10]])
     z = np.array([[[1, 4, 1, 1], [2, 5, 1, 1], [3, 6, 1, 1]], x - 1])
 
-    mine = Mine(underground=v, dig_tolerance=1)
+    mine = Mine(underground=tempArr, dig_tolerance=6)
 
     print(mine.underground)
 
