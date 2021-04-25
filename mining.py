@@ -283,8 +283,10 @@ class Mine(search.Problem):
         #Edge cases which are caught and correct value is returned
         if state.size == 0:
             yield None
+            return
         elif state.size == 1:
             yield (0, 0)
+            return
         # end
 
         #Loop through every x and Y location
@@ -421,7 +423,6 @@ class Mine(search.Problem):
         '''
         # convert to np.array in order to use tuple addressing
         # state[loc]   where loc is a tuple
-
         return np.sum(state * self.underground)
     #end
 
@@ -965,14 +966,12 @@ def surface_neigbhours3DTest():
 def actions2DTest():
     input = np.array([[-1, -1, 10], [-1, 20, 4], [-1, -1, -1]])
     mine = Mine(input)
+    state = mine.initial.copy()
 
-    state = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
-    # state = np.expand_dims(state, 1)
     expectedActions = [(0, 0), (1, 0), (2, 0)]
     actualActions = mine.actions(state)
 
     for i, child in enumerate(actualActions):
-        print(child)
         assert child == expectedActions[i]
     # end
 # end
@@ -995,16 +994,15 @@ def actions3DTest():
 def emptyTupleTest():
     input = np.array([[]])
     mine = Mine(input)
+    state = mine.initial.copy()
 
-    state = np.array([[]])
     # state = np.expand_dims(state, 1)
     expectedActions = None
-    actualActions = mine.actions(state)
+    actualActions = list(mine.actions(state))
 
     for i, child in enumerate(actualActions):
-        print(child)
+        # print(child)
         assert child == expectedActions
-
     # end
 # end
 
@@ -1017,7 +1015,7 @@ def oneTupleValueTest():
     actualActions = mine.actions(state)
 
     for i, child in enumerate(actualActions):
-        print(child)
+        # print(child)
         assert child == expectedActions[i]
     # end
 # end
@@ -1039,11 +1037,11 @@ def resultsTest():
     input = np.array([[-1, -1, 10], [-1, 20, 4], [-1, -1, -1]])
     mine = Mine(input)
 
-    state = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
+    state = mine.initial.copy()
     # state = np.expand_dims(state, 1)
-    expectedActions = [[[2, 2, 2]], [[0, 0, 0]], [[0, 0, 0]]]
+    expectedActions = [[[1, 0, 0]], [[0, 0, 0]], [[0, 0, 0]]]
 
-    actualActions = mine.results(state, (0, 0))
+    actualActions = mine.results(state, [(0, 0, 0)], prevSeenLocs={})
 
     assert np.array(actualActions).all() == np.array(expectedActions).all()
 # end
@@ -1052,7 +1050,7 @@ def payoffTest():
     input = np.array([[-2, -1, 10], [-1, 20, 7], [-1, -1, -1]])
     mine = Mine(input)
 
-    state = np.array([[1, 1, 1], [1, 1, 1], [0, 0, 0]])
+    state = np.array([[[1, 1, 1]], [[1, 1, 1]], [[0, 0, 0]]])
     # state = np.expand_dims(state, 1)
 
     expectedValue = 33
@@ -1070,7 +1068,7 @@ def is_dangerousTest():
 
     expected = False
     actual = mine.is_dangerous(state)
-    print(actual)
+    # print(actual)
 
     assert actual == expected
 # end
@@ -1084,22 +1082,9 @@ def is_dangerousTest():
 
     expected = True
     actual = mine.is_dangerous(state)
-    print(actual)
+    # print(actual)
 
     assert actual == expected
-# end
-
-def back2DTest():
-    input = np.array([[-2, -1, 10], [-1, 20, 7], [-1, -1, -1]])
-    mine = Mine(input)
-    action = [(0, 0), (0, 1), (0, 2), (1, 0), (1, 1), (1, 2)]
-    state = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
-    # state = np.expand_dims(state, 1)
-
-    # expected = False
-    [actualaction, actualstate] = mine.back2D(action, state)
-    print(actualaction)
-    print(actualstate)
 # end
 
 def validCoordsTest():
@@ -1169,11 +1154,11 @@ def getRingCoords2DTest():
 # end
 
 def compareTest():
-    numTries = 2000  # rand.randint(5,10)
+    numTries = 500  # rand.randint(5,10)
     outputList = []
 
     for _ in range(numTries):
-        print(_)
+        # print(_)
         if rand.choice([True, False]):
             # 2D mine test
             size = tuple(np.random.randint(1, 5, (2)))
@@ -1193,7 +1178,7 @@ def compareTest():
         outputList.append(str(dpResult) == str(bbResults))
 
         if outputList[-1] != True:
-            print("")
+            # print("")
             dpResult = search_dp_dig_plan(mine)
     # end
 
@@ -1304,23 +1289,22 @@ def hardCodedDPMineTests():
 #end
 
 def runTests():
-    # surface_neigbhours2DTest()
-    # surface_neigbhours3DTest()
-    # actions2DTest()
-    # actions3DTest()
-    # emptyTupleTest()
-    # oneTupleValueTest()
-    # resultTest()
-    # resultsTest()
-    # payoffTest()
-    # is_dangerousTest()
-    # compareTest()
-    # back2DTest()
-    # validCoordsTest()
-    # validCoordsTest3D()
-    # getRingCoords2DTest()
-    # getRingCoords3DTest()
-    # getParentsSumTest2D()
+    surface_neigbhours2DTest()
+    surface_neigbhours3DTest()
+    actions2DTest()
+    actions3DTest()
+    emptyTupleTest()
+    oneTupleValueTest()
+    resultTest()
+    resultsTest()
+    payoffTest()
+    is_dangerousTest()
+    compareTest()
+    validCoordsTest()
+    validCoordsTest3D()
+    getRingCoords2DTest()
+    getRingCoords3DTest()
+    getParentsSumTest2D()
 
     hardCodedBBMineTests()
     hardCodedDPMineTests()

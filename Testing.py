@@ -224,7 +224,6 @@ def back2DTest():
     [actualaction,actualstate]  = mine.back2D(action,state)
     print(actualaction)
     print(actualstate)
-    # assert actual == expected
 
 # end
 
