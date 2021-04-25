@@ -681,79 +681,65 @@ def search_bb_dig_plan(mine):
 
     # print(NewUnderground)
 
-    try:
-        x, y, z = np.where(mine.initial == 0)
-        tuples = sorted(zip(x, y, z), key=lambda x: x[-1], reverse=True)
-        locTrack = -1
-        # Start at bottom of mine
-        for loc in tuples:
-            # print(loc)
+
+    x, y, z = np.where(mine.initial == 0)
+    tuples = sorted(zip(x, y, z), key=lambda x: x[-1], reverse=True)
+    locTrack = -1
+
+    Zvalue = mine.len_z
+    TempUnderground = NewUnderground.copy()
+
+    for loc in tuples:
+        if Zvalue != loc[2]:
+            Sometuff
+
+        if NewUnderground[loc] > 0:
             if locTrack != loc[2]:
                 location = []
                 locTrack = loc[2]
 
-            NewUndergroundBackTrack = NewUnderground.copy()
-            BackTrack = False
-            if NewUnderground[loc] > 0 and loc[2] - 1 >= 0:
-                OneUpUpdated = False
+            if loc[2] > 0:
+                NewUndergroundBackTrack = NewUnderground.copy()
                 oneUp = (loc[0], loc[1], loc[2] - 1)
-                if NewUnderground[oneUp] > -1:
-                    tally = NewUnderground[loc]
-                # end
 
-                if NewUnderground[oneUp] < 0 and OneUpUpdated == False:
-                    if NewUnderground[oneUp] + NewUnderground[loc] < 0:
-                        BackTrack = True
-                    NewUnderground[oneUp] += NewUnderground[loc]
-                    tally = NewUnderground[oneUp]
-                    OneUpUpdated = True
-                # end
+
+                temArray = []
 
                 for x in range(-1, 2):
                     for y in range(-1, 2):
                         if (x, y) != (0, 0):
+
+
                             tempLoc = (loc[0] - x, loc[1] - y, loc[2] - mine.dig_tolerance)
                             if mine.validCoords(tempLoc):
+                                temArray.append(tempLoc)
 
-                                if locTrack == loc[2]:
-                                    location += [tempLoc]
+                temArray += [oneUp]
+                TheListValues = list(map(lambda loc: mine.underground[loc], temArray ))
+                if min(TheListValues) >= 0:
+                    for l in temArray:
+                        NewUnderground[l] += NewUnderground[loc]
+                else:
 
-                                if NewUnderground[tempLoc] > 0:
-                                    tally = 0
-                                tally = tally + NewUnderground[tempLoc]
-                                NewUnderground[tempLoc] = tally
+                    OrderedByMin = [x for _, x in sorted(zip(TheListValues, temArray))]
 
-                            # end
-                        # end
-                    # end
-                # end
+                    Check = True
+                    TempUnderground[OrderedByMin[0]] = TempUnderground[OrderedByMin[0]]+TempUnderground[loc]
 
-                if NewUnderground[oneUp] > -1 and OneUpUpdated == False:
-                    NewUnderground[oneUp] = NewUnderground[oneUp] + tally
-                    OneUpUpdated = True
+                    if TempUnderground[OrderedByMin[0]] > -1:
 
-            # Checks for a reptead value in array
-            for i in range(0, len(location)):
-                for j in range(i + 1, len(location)):
-                    if (location[i] == location[j]):
-                        # print(NewUnderground)
-                        if NewUnderground[location[j]] > -1:
-                            BackTrack = False
-            if BackTrack:
-                NewUnderground = NewUndergroundBackTrack.copy()
-                BackTrack = False
+                        for jj in OrderedByMin[1:]:
 
-            # end
-        # end
-    except Exception as e:
-        print(e)
-        print("Yeet")
-    #
-    # return
+                            TempUnderground[jj] += TempUnderground[OrderedByMin[0]]
+                            if TempUnderground[jj]<0:
+                                Check = False
 
-    # print(NewUnderground)
-    print(np.transpose(NewUnderground * 100))
+                        if Check:
+                            NewUnderground = TempUnderground
 
+                    # print("DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD")
+                    # print(NewUnderground)
+        a = 1
     return getMax(mine, NewUnderground)
 
 
@@ -854,10 +840,10 @@ def main():
     v = np.array([[-1, -1, 10], [-1, 20, 4], [-1, -1, -1]])
     some_2d_underground_1 = np.array([
         [-0.814, 0.637, 1.824, -0.563],
-        [0.559, -0.234, -0.366, 0.07],
-        [0.175, -0.284, 0.026, -0.316],
-        [0.212, 0.088, 0.304, 0.604],
-        [-1.231, 1.558, -0.467, -0.371]])
+        [0.559, -0.234, -0.01, 1.7],
+        [0.175, -0.284, -1.6, -0.316],
+        [0.212, 0.088, -0.004, 1.084],
+        [-1.231, 1.558, -0.067, -0.371]])
     # vDash = np.array([
     #     [-0.814, 0.637, 1.824, -0.563],
     #     [0.559, -0.234, -0.366, 0.07],
