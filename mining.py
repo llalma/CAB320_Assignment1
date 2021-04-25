@@ -281,19 +281,23 @@ class Mine(search.Problem):
         #   Really bad need to find a better way.
         ####################
 
+        #Edge cases which are caught and correct value is returned
         if state.size == 0:
             yield None
         elif state.size == 1:
             yield (0, 0)
         # end
+
+        #Loop through every x and Y location
         for x in range(0, self.len_x, 1):
             for y in range(0, self.len_y, 1):
+
                 validCheck = False
                 for neighbour in self.surface_neigbhours((x, y)):
-                    g = self.getDepth(state, (x, y))
-                    h = self.getDepth(state, neighbour)
-                    diff = self.getDepth(state, (x, y)) - self.getDepth(state, neighbour)
-                    if abs(diff) <= self.dig_tolerance and self.getDepth(state, (x, y)) < self.len_z:
+                    diff = self.getDepth(state, (x, y)) - self.getDepth(state, neighbour)   #Get ther depth difference between current cell and neighbour
+
+                    #Check the difference does not break the dig tolerance
+                    if abs(diff) <= self.dig_tolerance and self.getDepth(state, (x, y)) < self.len_z and diff <= 0:
                         validCheck = True
                     else:
                         validCheck = False
@@ -301,10 +305,12 @@ class Mine(search.Problem):
                     # end
                 # end
 
+                #Return result if the cell is valid
                 if validCheck:
                     yield (x, y)
                 # end
             # end
+        #end
     # end
 
     def result(self, state, action):
@@ -622,58 +628,41 @@ def searchRec(mine, state, prevSeenLocs = {}, minePath=[], mineSum=[]):
       '''
 
     #Loop Through each cell in the mine.
-    try:
-        x,y,z = np.where((state==0) & (mine.underground>0))
+    x,y,z = np.where((state==0) & (mine.underground>0))
 
-        tuples = sorted(zip(x,y,z), key=lambda x: x[-1])
-        #Go through positions in mine
-        for loc in tuples:
+    tuples = sorted(zip(x,y,z), key=lambda x: x[-1])
+    #Go through positions in mine
+    for loc in tuples:
 
-            #If loc has been previously calculated use it, otherwise calculate for first time..
-            if loc in prevSeenLocs:
-                s,p = prevSeenLocs[loc]['Sum'], prevSeenLocs[loc]['Path']
+        #If loc has been previously calculated use it, otherwise calculate for first time..
+        if loc in prevSeenLocs:
+            s,p = prevSeenLocs[loc]['Sum'], prevSeenLocs[loc]['Path']
 
-                """
-                Need to test this further, it works with test data
-                """
-                for minedLoc in set(p) & set(minePath):
-                    s -= mine.underground[minedLoc]
-                #end
-                # for pathLoc in p:
-                #     if pathLoc in minePath:
-                #         s -= mine.underground[pathLoc]
-                #     #end
-                # #end
-
-            else:
-                s, p = getParentsSum(mine, state, loc, prevSeenLocs)
+            for minedLoc in set(p) & set(minePath):
+                s -= mine.underground[minedLoc]
             #end
 
-            #If the sum of a loc is greater than 0, it will be worth to dig.
-            if s > 0:
-                mineSum += [s]
-
-                # Find the difference between the sets, so a cell is not dug multiple times. Only add the diff to
-                # the final path
-                p = list(set(p) - (set(p) & set(minePath)))
-                minePath += p
-
-
-
-                # Perform digging action
-                state = mine.results(state, p, prevSeenLocs)
-
-                #Recursivally call function to optimize mine, Can ignore first 2 outputs as they are only returing
-                #values to top function
-                _,_,state = searchRec(mine, np.array(state), minePath=minePath, mineSum=mineSum)
-                break
-            #end
+        else:
+            s, p = getParentsSum(mine, state, loc, prevSeenLocs)
         #end
 
-    #Saftey Check
-    except Exception as e:
-        print(e)
-        print("No avaliable locations to dig remaining")
+        #If the sum of a loc is greater than 0, it will be worth to dig.
+        if s > 0:
+            mineSum += [s]
+
+            # Find the difference between the sets, so a cell is not dug multiple times. Only add the diff to
+            # the final path
+            p = list(set(p) - (set(p) & set(minePath)))
+            minePath += p
+
+            # Perform digging action
+            state = mine.results(state, p, prevSeenLocs)
+
+            #Recursivally call function to optimize mine, Can ignore first 2 outputs as they are only returing
+            #values to top function
+            _,_,state = searchRec(mine, np.array(state), minePath=minePath, mineSum=mineSum)
+            break
+        #end
     #end
 
     #Return the values.
@@ -698,21 +687,40 @@ def search_dp_dig_plan(mine):
 
     '''
 
-    best_payoff, best_action_list, best_final_state = searchRec(mine, mine.initial)
+    best_payoff, best_action_list, best_final_state = searchRec(mine, mine.initial.copy(), mineSum=[], minePath=[])
+    best_action_list = find_action_sequence(mine.initial.copy(), best_final_state)
 
-    return best_payoff, find_action_sequence(np.zeros_like(best_final_state), best_final_state), best_final_state #np.sum(best_final_state, axis=2)
+    # Removes z component from actions and removes the Y dimension if one was added intially.
+    best_final_state, best_action_list = formatResults(mine, best_final_state, best_action_list)
+
+    return best_payoff, best_action_list, best_final_state
 #end
 
 #BB Approach
-
 def findOptimalColHeight(mine, state):
-    bestCols = np.zeros((mine.len_x, mine.len_y))
+    """
+    Returns the best depth to dig to for each column in a mine, Does not take into account digConstrains, but does take
+    into acocunt cells directly above until surface is reached.
 
+    Parameters
+    ----------
+    mine : An instance of Mine
+    state : A valid state fo a mine
+
+    Returns
+    -------
+    bestCols
+    """
+    bestCols = np.zeros((mine.len_x, mine.len_y))   #Initialize outptu array with zeros, to same size as an x*y array.
+
+    #Get values of cells which have not been dug.
     statedUnderground = mine.underground * abs(state-1)
 
+    #loop through every x and y coordinate
     for x in range(mine.len_x):
         for y in range(mine.len_y):
 
+            #For each z value in a coloum, try summing from depth 0 to z, best found sum is stored.
             for z in range(1, mine.len_z+1):
                 tempSum = np.sum(statedUnderground[(x, y)][0:z])
                 if tempSum > bestCols[(x,y)]:
@@ -726,7 +734,22 @@ def findOptimalColHeight(mine, state):
 #end
 
 def bbExapnded(mine, states, bestFoundState, bestFoundSum):
-    outputStates = {}
+    '''
+    Recurisve call for branch and bound approach. Uses heuristic of sum(state * mine.underground) + sum(maxCols) for the pruning of branches.
+
+    Parameters
+    ----------
+    mine : An instance of a Mine problem.
+    states : A list of unique valid states
+    bestFoundState : The current best found state of the mine
+    bestFoundSum : The current best found sum, comes from bestFoundState, stored for simplification
+
+    Returns
+    -------
+    bestFoundSum, bestFoundState
+    '''
+
+    outputStates = {}   #Dict to store children of current states which do not fail the contraints listed.
 
     #Check a state does exist, base case for branching.
     if states == []:
@@ -736,24 +759,28 @@ def bbExapnded(mine, states, bestFoundState, bestFoundSum):
     #Find children of current depth of tree
     for state in states:
         stateSum = np.sum(state*mine.underground)
+
         # Update best found state if it is better
         if stateSum > bestFoundSum:
             bestFoundState = state
             bestFoundSum = np.sum(state*mine.underground)
         #end
 
+        #Find optimal column heights to dig to.
         bestCols = findOptimalColHeight(mine, state)
 
+        #Check the state has a possoiblity of being better than the bestFoundState
         if stateSum + np.sum(bestCols) > bestFoundSum:
             #Loop through valid actions for a state and branch from them
             for a in mine.actions(state):
                 a = (a[0], a[1], int(np.sum(state[a])))
                 nextState = np.array(mine.result(state, a))
-                outputStates[hash(str(nextState))] = nextState
+                outputStates[hash(str(nextState))] = nextState  #Store outputs in dictionary, with key of the hash of the state. Dictionary is used to prevent duplicates being in searched multiple times
             #end
         #end
     #end
 
+    #Recursive call for next layer deeper
     bestFoundSum, bestFoundState = bbExapnded(mine, list(outputStates.values()), bestFoundState, bestFoundSum)
     return bestFoundSum, bestFoundState
 #end
@@ -774,12 +801,16 @@ def search_bb_dig_plan(mine):
     bestFoundState = mine.initial.copy()
     bestFoundSum = 0
 
-    bestFoundSum, bestFoundState = bbExapnded(mine, [bestFoundState], bestFoundState, bestFoundSum)
+    bestFoundSum, best_final_state = bbExapnded(mine, [bestFoundState], bestFoundState, bestFoundSum)
+    best_action_list = find_action_sequence(mine.initial.copy(), best_final_state)
 
-    return bestFoundSum, find_action_sequence(mine.initial.copy(), bestFoundState), bestFoundState
+    #Removes z component from actions and removes the Y dimension if one was added intially.
+    best_final_state, best_action_list = formatResults(mine, best_final_state, best_action_list)
+
+    return bestFoundSum, best_action_list, best_final_state
 #end
 
-#Extra Function
+#Extra Functions
 def find_action_sequence(s0, s1):
     '''
     Compute a sequence of actions to go from state s0 to state s1.
@@ -834,34 +865,29 @@ def find_action_sequence(s0, s1):
     return outputActionList
 #end
 
-def back2D(actions, state):
-    """
-    Converts 3D locations and arrays, as converted in the Mine.init, back to 2D.
+def formatResults(mine, state, actions):
 
-    Parameters
-    ----------
-    actions
-    state
+    if mine.flag2D:
+        # We added a y dimension, so need to remove it.
+        state = np.squeeze(state)
 
-    Returns
-    -------
-    actions, state
-    """
+        for i, a in enumerate(actions):
+            actions[i] = (a[0],)
+        #end
+    else:
+        #A Y diemnsion was not added by us, still need to remove z component from actions
+        for i, a in enumerate(actions):
+            actions[i] = (a[0], a[1], )
+        # end
+    #end
 
-    #Check if the 2D flag has been set. If it has remove the dimension that was added initially
-    #and return actions and state
-    for i, a in enumerate(np.array(actions)):
-        actions[i] = tuple(a[[0, 2]])
-    # end
-    state = np.squeeze(state)
-
-    return actions, state
+    return state, actions
 #end
 
 
 def main():
     # print(my_team())
-    #
+
     b = np.array([[-1, -200, 1], [5, 8, 5]])
     v = np.array([[-1, -1, -1], [-1, 4, -1], [-1, -10, 11]])
     vDash = np.array([[-1, -1, 10, 5], [-1, -20, -4, -7], [-1, -1, -1, -21]])
@@ -871,6 +897,8 @@ def main():
     z = np.array([[[1, 4, 1, 1], [2, 5, 1, 1], [3, 6, 1, 1]], x - 1])
 
     mine = Mine(underground=v, dig_tolerance=1)
+
+    print(mine.underground)
 
     print("########################\ndpMethod\n########################")
     best_action_list, best_payoff, best_final_state = search_dp_dig_plan(mine)
@@ -884,12 +912,10 @@ def main():
     print(best_action_list)
     print(best_final_state)
     print(best_payoff)
-
 #end
         
 if __name__ == "__main__":
     main()
-
 #end
         
         
