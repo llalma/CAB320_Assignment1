@@ -146,8 +146,85 @@ def resultTest():
 
 # end
 
+def resultsTest():
+    input = np.array([[-1, -1, 10], [-1, 20, 4], [-1, -1, -1]])
+    mine = mining.Mine(input)
+
+    state = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
+    state = np.expand_dims(state, 1)
+    expectedActions = [[[2, 2, 2]],[[0, 0, 0]],[[0, 0, 0]]]
+
+    actualActions = mine.results(state,(0, 0))
+
+    assert np.array(actualActions).all() == np.array(expectedActions).all()
+
+# end
 
 
+def payoffTest():
+    input = np.array([[-2, -1, 10], [-1, 20, 7], [-1, -1, -1]])
+    mine = mining.Mine(input)
+
+    state = np.array([[1, 1, 1], [1, 1, 1], [0, 0, 0]])
+    state = np.expand_dims(state, 1)
+
+
+    expectedValue = 33
+    actualValue = mine.payoff(state)
+
+    assert actualValue == expectedValue
+
+# end
+
+
+def is_dangerousTest():
+    input = np.array([[-2, -1, 10], [-1, 20, 7], [-1, -1, -1]])
+    mine = mining.Mine(underground = input, dig_tolerance=1)
+
+    state = np.array([[1, 1, 1], [1, 1, 1], [0, 0, 0]])
+    state = np.expand_dims(state, 1)
+
+
+    expected = False
+    actual = mine.is_dangerous(state)
+    print(actual)
+
+    assert actual == expected
+
+# end
+
+
+def is_dangerousTest():
+    input = np.array([[-2, -1, 10], [-1, 20, 7], [-1, -1, -1]])
+    mine = mining.Mine(underground = input, dig_tolerance=1)
+
+    state = np.array([[1, 1, 1], [1, 1, 1], [0, 0, 0]])
+    state = np.expand_dims(state, 1)
+
+
+    expected = False
+    actual = mine.is_dangerous(state)
+    print(actual)
+
+    assert actual == expected
+
+# end
+
+def back2DTest():
+    input = np.array([[-2, -1, 10], [-1, 20, 7], [-1, -1, -1]])
+    mine = mining.Mine(underground = input)
+    # [(0, 0), (0, 1), (0, 2), (1, 0), (1, 1), (1, 2)]
+    state = np.array([[1, 1, 1], [1, 1, 1], [0, 0, 0]])
+    state = np.expand_dims(state, 1)
+
+
+    expected = False
+    actual = mine.back2D(state)
+    print(actual)
+
+    assert actual == expected
+
+# end
 
 def main():
     # test1()
@@ -158,7 +235,10 @@ def main():
     # actions3DTest()
     # emptyTupleTest()
     # oneTupleValueTest()
-    resultTest()
+    # resultTest()
+    # resultsTest()
+    # payoffTest()
+    is_dangerousTest()
 # end
 
 if __name__ == "__main__":

@@ -49,14 +49,15 @@ import search
 import time
 
 
-
 def my_team():
     '''    Return the list of the team members of this assignment submission
     as a list    of triplet of the form (student_number, first_name, last_name)        '''
-    return [(9960392,'Liam','Hulsman-Benson'), (10077413, 'Alexander', 'Farrall')]
-#end
+    return [(9960392, 'Liam', 'Hulsman-Benson'), (10077413, 'Alexander', 'Farrall')]
 
-    
+
+# end
+
+
 def convert_to_tuple(a):
     '''
     Convert the parameter 'a' into a nested tuple of the same shape as 'a'.
@@ -74,10 +75,10 @@ def convert_to_tuple(a):
     '''
     if isinstance(a, Number):
         return a
-    #end
-    if len(a)==0:
+    # end
+    if len(a) == 0:
         return ()
-    #end
+    # end
     # 'a' is non empty tuple
     if isinstance(a[0], Number):
         # 'a' is a flat list
@@ -85,9 +86,9 @@ def convert_to_tuple(a):
     else:
         # 'a' must be a nested list with 2 levels (a matrix)
         return tuple(tuple(r) for r in a)
-    #end
-    
-    
+    # end
+
+
 def convert_to_list(a):
     '''
     Convert the array-like parameter 'a' into a nested list of the same 
@@ -104,10 +105,10 @@ def convert_to_list(a):
     '''
     if isinstance(a, Number):
         return a
-    #end
-    if len(a)==0:
+    # end
+    if len(a) == 0:
         return []
-    #end
+    # end
     # 'a' is non empty tuple
     if isinstance(a[0], Number):
         # 'a' is a flat list
@@ -115,9 +116,7 @@ def convert_to_list(a):
     else:
         # 'a' must be a nested list with 2 levels (a matrix)
         return [list(r) for r in a]
-    #end
-
-
+    # end
 
 
 class Mine(search.Problem):
@@ -151,9 +150,9 @@ class Mine(search.Problem):
     
     States must be tuple-based.
     
-    '''    
-    
-    def __init__(self, underground, dig_tolerance = 1):
+    '''
+
+    def __init__(self, underground, dig_tolerance=1):
         '''
         Constructor
         
@@ -176,24 +175,24 @@ class Mine(search.Problem):
 
         '''
         # super().__init__() # call to parent class constructor not needed
-        
-        self.underground = underground 
+
+        self.underground = underground
         # self.underground  should be considered as a 'read-only' variable!
         self.dig_tolerance = dig_tolerance
 
-        #Convert 2D to 3D and set 2D conversion flag, to convert back at end
+        # Convert 2D to 3D and set 2D conversion flag, to convert back at end
         self.flag2D = False
         if self.underground.ndim == 2:
             self.flag2D = True
-            self.underground = np.expand_dims(self.underground,1)
-        #end
+            self.underground = np.expand_dims(self.underground, 1)
+        # end
 
         self.initial = np.zeros_like(self.underground)
         self.cumsum_mine = 0.0
 
         self.len_x, self.len_y, self.len_z = self.underground.shape
-    #end
 
+    # end
 
     def surface_neigbhours(self, loc):
         '''
@@ -211,27 +210,28 @@ class Mine(search.Problem):
         neighbouring surface cells.
 
         '''
-        L=[]
-        assert len(loc) in (1,2)
-        if len(loc)==1:
-            if loc[0]-1>=0:
-                L.append((loc[0]-1,))
-            #end
-            if loc[0]+1<self.len_x:
-                L.append((loc[0]+1,))
-            #end
+        L = []
+        assert len(loc) in (1, 2)
+        if len(loc) == 1:
+            if loc[0] - 1 >= 0:
+                L.append((loc[0] - 1,))
+            # end
+            if loc[0] + 1 < self.len_x:
+                L.append((loc[0] + 1,))
+            # end
         else:
             # len(loc) == 2
-            for dx,dy in ((-1,-1),(-1,0),(-1,+1),
-                          (0,-1),(0,+1),
-                          (+1,-1),(+1,0),(+1,+1)):
-                if  (0 <= loc[0]+dx < self.len_x) and (0 <= loc[1]+dy < self.len_y):
-                    L.append((loc[0]+dx, loc[1]+dy))
-                #end
-            #end
-        #end
+            for dx, dy in ((-1, -1), (-1, 0), (-1, +1),
+                           (0, -1), (0, +1),
+                           (+1, -1), (+1, 0), (+1, +1)):
+                if (0 <= loc[0] + dx < self.len_x) and (0 <= loc[1] + dy < self.len_y):
+                    L.append((loc[0] + dx, loc[1] + dy))
+                # end
+            # end
+        # end
         return L
-    #end
+
+    # end
 
     def getDepth(self, state, loc):
         '''
@@ -255,8 +255,8 @@ class Mine(search.Problem):
                 '''
 
         return sum(state[loc])
-    #end
 
+    # end
 
     def actions(self, state):
         '''
@@ -274,7 +274,7 @@ class Mine(search.Problem):
         -------
         a generator of valid actions
 
-        '''        
+        '''
         state = np.array(state)
 
         ####################
@@ -284,41 +284,41 @@ class Mine(search.Problem):
         if state.size == 0:
             yield None
         elif state.size == 1:
-            yield (0,0)
-        #end
+            yield (0, 0)
+        # end
 
         for x in range(0, self.len_x, 1):
             for y in range(0, self.len_y, 1):
                 validCheck = False
-                for neighbour in self.surface_neigbhours((x,y)):
-                    g = self.getDepth(state, (x,y))
+                for neighbour in self.surface_neigbhours((x, y)):
+                    g = self.getDepth(state, (x, y))
                     h = self.getDepth(state, neighbour)
-                    diff = self.getDepth(state, (x,y)) - self.getDepth(state, neighbour)
-                    if abs(diff) <= self.dig_tolerance and self.getDepth(state, (x,y)) < self.len_z and diff <= 0:
+                    diff = self.getDepth(state, (x, y)) - self.getDepth(state, neighbour)
+                    if abs(diff) <= self.dig_tolerance and self.getDepth(state, (x, y)) < self.len_z and diff <= 0:
                         validCheck = True
                     else:
                         validCheck = False
                         break
-                    #end
-                #end
+                    # end
+                # end
 
                 if validCheck:
-                    yield (x,y)
-                #end
-            #end
+                    yield (x, y)
+                # end
+            # end
 
-    #end
-                
-  
+    # end
+
     def result(self, state, action):
         """Return the state that results from executing the given
         action in the given state. The action must a valid actions.
         That is, one of those generated by  self.actions(state)."""
         action = tuple(action)
-        new_state = np.array(state) # Make a copy
+        new_state = np.array(state)  # Make a copy
         new_state[action] += 1
         return convert_to_tuple(new_state)
-    #end
+
+    # end
 
     def results(self, state, actions, prevSeenLocs=None):
         """Return the state that results from executing the given
@@ -330,16 +330,16 @@ class Mine(search.Problem):
             new_state[action] += 1
 
             if prevSeenLocs != None:
-                #Remove it from dict as it will never be used again
+                # Remove it from dict as it will never be used again
                 if action in prevSeenLocs:
                     del prevSeenLocs[action]
-                #end
-            #end
-        #end
+                # end
+            # end
+        # end
         return new_state
-    #end
-                
-    
+
+    # end
+
     def console_display(self):
         '''
         Display the mine on the console
@@ -356,10 +356,11 @@ class Mine(search.Problem):
         else:
             # 3D mine
             print('Level by level x,y slices')
-        #end
+        # end
         print(self.__str__())
-    #end
-        
+
+    # end
+
     def __str__(self):
         if self.underground.ndim == 2:
             # 2D mine
@@ -368,44 +369,44 @@ class Mine(search.Problem):
             # 3D mine
             # level by level representation
             return '\n'.join('level {}\n'.format(z)
-                   +str(self.underground[...,z]) for z in range(self.len_z))
-                    
-                        
-                
-            return self.underground[loc[0], loc[1],:]
-        #end
-    #end
-    
-    @staticmethod   
+                             + str(self.underground[..., z]) for z in range(self.len_z))
+
+            return self.underground[loc[0], loc[1], :]
+        # end
+
+    # end
+
+    @staticmethod
     def plot_state(state):
-        if state.ndim==1:
+        if state.ndim == 1:
             fig, ax = plt.subplots()
-            ax.bar(np.arange(state.shape[0]) ,
-                    state
-                    )
+            ax.bar(np.arange(state.shape[0]),
+                   state
+                   )
             ax.set_xlabel('x')
             ax.set_ylabel('z')
         else:
-            assert state.ndim==2
+            assert state.ndim == 2
             # bar3d(x, y, z, dx, dy, dz,
             # fake data
             _x = np.arange(state.shape[0])
             _y = np.arange(state.shape[1])
-            _yy, _xx = np.meshgrid(_y, _x) # cols, rows
-            x, y = _xx.ravel(), _yy.ravel()            
+            _yy, _xx = np.meshgrid(_y, _x)  # cols, rows
+            x, y = _xx.ravel(), _yy.ravel()
             top = state.ravel()
             bottom = np.zeros_like(top)
             width = depth = 1
-            fig = plt.figure(figsize=(3,3))
-            ax1 = fig.add_subplot(111,projection='3d')
+            fig = plt.figure(figsize=(3, 3))
+            ax1 = fig.add_subplot(111, projection='3d')
             ax1.bar3d(x, y, bottom, width, depth, top, shade=True)
             ax1.set_xlabel('x')
             ax1.set_ylabel('y')
             ax1.set_zlabel('z')
             ax1.set_title('State')
-        #end
+        # end
         plt.show()
-    #end
+
+    # end
 
     def payoff(self, state):
         '''
@@ -417,9 +418,9 @@ class Mine(search.Problem):
         # convert to np.array in order to use tuple addressing
         # state[loc]   where loc is a tuple
 
-        return sum(state * self.underground)
-    #end
+        return np.sum(state * self.underground)
 
+    # end
 
     def is_dangerous(self, state):
         '''
@@ -442,8 +443,9 @@ class Mine(search.Problem):
 
         vectoredFunction = np.vectorize(self.compareNeighboursHeights, excluded=['summedState'])
 
-        return False not in vectoredFunction(summedState=summedState,x=xCoords, y=yCoords)
-    #end
+        return False not in vectoredFunction(summedState=summedState, x=xCoords, y=yCoords)
+
+    # end
 
     def back2D(self, actions, state):
         """
@@ -467,47 +469,52 @@ class Mine(search.Problem):
         # end
 
         return actions, state
-    #end
+
+    # end
 
     def validCoords(self, loc):
 
-        if 0<=loc[0]<self.len_x and 0<=loc[1]<self.len_y and 0<=loc[2]<self.len_z:
+        if 0 <= loc[0] < self.len_x and 0 <= loc[1] < self.len_y and 0 <= loc[2] < self.len_z:
             return True
-        #end
+        # end
         return False
-    #end
+
+    # end
 
     def compareNeighboursHeights(self, summedState, x, y):
-        loc = (x,y)
+        loc = (x, y)
 
-        #Returns heights of all neighbours of loc
+        # Returns heights of all neighbours of loc
         lambdaFunc = lambda nLoc: summedState[nLoc]
         heightNeighbours = list(map(lambdaFunc, self.surface_neigbhours(loc)))
 
-        o = list(map(lambda h: abs(summedState[loc]-h) <= self.dig_tolerance, heightNeighbours))
+        o = list(map(lambda h: abs(summedState[loc] - h) <= self.dig_tolerance, heightNeighbours))
 
         if False in o:
             return False
 
         return True
-    #end
+    # end
 
     # ========================  Class Mine  ==================================
 
-#DP Arroach
+
+# DP Arroach
 def getRingCoords(mine, loc):
     outputCoords = []
 
-    if (loc[2]-mine.dig_tolerance >= 0):
+    if (loc[2] - mine.dig_tolerance >= 0):
 
-        for x_loc in range(-1,2):
-            for y_loc in range(-1,2):
+        for x_loc in range(-1, 2):
+            for y_loc in range(-1, 2):
                 if not (x_loc == 0 and y_loc == 0):
-                    if (0<= loc[0] - x_loc < mine.len_x and 0<= loc[1] - y_loc < mine.len_y):
+                    if (0 <= loc[0] - x_loc < mine.len_x and 0 <= loc[1] - y_loc < mine.len_y):
                         outputCoords.append((loc[0] - x_loc, loc[1] - y_loc, loc[2] - mine.dig_tolerance))
 
     return outputCoords
-#end
+
+
+# end
 
 def getParentsSum(mine, state, loc, prevSeenLocs):
     aboveCellCoords = (loc[0], loc[1], loc[2] - 1)  # The cell directly above specifed loc.
@@ -516,29 +523,31 @@ def getParentsSum(mine, state, loc, prevSeenLocs):
     outputSum = mine.underground[loc]
     outputPath = [loc]
 
-    #Cell has been previosuly calculated, return that instead
+    # Cell has been previosuly calculated, return that instead
     if loc in prevSeenLocs:
         return prevSeenLocs[loc]["Sum"], prevSeenLocs[loc]["Path"]
-    #end
+    # end
 
-    #To get loc cell value, need to add cell directly above and cells in ring shape around it. more specific in report
+    # To get loc cell value, need to add cell directly above and cells in ring shape around it. more specific in report
     for coords in [aboveCellCoords] + ringCoords:
         if coords == (2, 0, 0):
             print("")
         if mine.validCoords(coords) and state[coords] == 0:
-            tempSum, tempPath = getParentsSum(mine,state,coords,prevSeenLocs)
+            tempSum, tempPath = getParentsSum(mine, state, coords, prevSeenLocs)
             outputSum += tempSum
             outputPath = tempPath + outputPath
-        #end
-    #end
+        # end
+    # end
 
-    #Add to Dict to Use later, instead of calcing again
-    prevSeenLocs[loc] = {"Sum":outputSum, "Path":outputPath}
+    # Add to Dict to Use later, instead of calcing again
+    prevSeenLocs[loc] = {"Sum": outputSum, "Path": outputPath}
 
     return outputSum, outputPath
-#end
 
-def search_rec(mine, state, prevSeenLocs = {}, minePath=[], mineSum=[]):
+
+# end
+
+def search_rec(mine, state, prevSeenLocs={}, minePath=[], mineSum=[]):
     '''
       Recursive search function for search_dp_dig_plan,
 
@@ -560,42 +569,44 @@ def search_rec(mine, state, prevSeenLocs = {}, minePath=[], mineSum=[]):
 
       '''
 
-    #Loop Through each cell in the mine.
+    # Loop Through each cell in the mine.
 
     try:
-        x,y,z = np.where(state==0)
+        x, y, z = np.where(state == 0)
 
-        #Start at bottom of mine, to remove more cells initially.
-        for loc in zip(np.flip(x),np.flip(y),np.flip(z)):
+        # Start at bottom of mine, to remove more cells initially.
+        for loc in zip(np.flip(x), np.flip(y), np.flip(z)):
             if state[loc] == 0 and mine.underground[loc] > 0:
 
                 if loc in prevSeenLocs:
-                    s,p = prevSeenLocs[loc]['Sum'], prevSeenLocs[loc]['Path']
+                    s, p = prevSeenLocs[loc]['Sum'], prevSeenLocs[loc]['Path']
                 else:
                     s, p = getParentsSum(mine, state, loc, prevSeenLocs)
-                #end
+                # end
 
                 if s > 0:
                     mineSum += [s]
 
-                    diff = list(set(p) - (set(p)&set(minePath)))
+                    diff = list(set(p) - (set(p) & set(minePath)))
                     minePath += diff
 
                     # Perform digging action
                     state = mine.results(state, diff, prevSeenLocs)
 
-                    _,_,state = search_rec(mine, np.array(state), minePath=minePath, mineSum=mineSum)
+                    _, _, state = search_rec(mine, np.array(state), minePath=minePath, mineSum=mineSum)
                     break
-                #end
-            #end
-        #end
+                # end
+            # end
+        # end
     except Exception as e:
         print(e)
         print("No avaliable locations to dig remaining")
-    #end
+    # end
 
     return np.sum(mine.underground * state), minePath, state
-#end
+
+
+# end
 
 def search_dp_dig_plan(mine):
     '''
@@ -618,13 +629,13 @@ def search_dp_dig_plan(mine):
     # best_payoff, best_action_list, best_final_state  = search_rec(mine, mine.initial)
     best_payoff, best_action_list, best_final_state = search_rec(mine, mine.initial)
 
-
     return find_action_sequence(np.zeros_like(best_final_state), best_final_state), best_payoff, best_final_state
 
-#end
+
+# end
 
 
-#BB Arroach
+# BB Arroach
 def bbSearch(mine, state, loc=None):
     state = np.array(state)
 
@@ -638,14 +649,16 @@ def bbSearch(mine, state, loc=None):
             tempChildSum = bbSearch(mine, mine.result(state, child), child) + mine.underground[loc]
         else:
             tempChildSum = bbSearch(mine, mine.result(state, child), child)
-        #end
+        # end
 
         if tempChildSum > childMax:
             childMax = tempChildSum
-        #end
-    #end
+        # end
+    # end
     return childMax
-#end
+
+
+# end
 
 def search_bb_dig_plan(mine):
     '''
@@ -666,14 +679,13 @@ def search_bb_dig_plan(mine):
 
     NewUnderground = mine.underground.copy()
 
-
     # print(NewUnderground)
 
     try:
-        x,y,z = np.where(mine.initial==0)
+        x, y, z = np.where(mine.initial == 0)
         tuples = sorted(zip(x, y, z), key=lambda x: x[-1], reverse=True)
         locTrack = -1
-        #Start at bottom of mine
+        # Start at bottom of mine
         for loc in tuples:
             # print(loc)
             if locTrack != loc[2]:
@@ -682,12 +694,12 @@ def search_bb_dig_plan(mine):
 
             NewUndergroundBackTrack = NewUnderground.copy()
             BackTrack = False
-            if NewUnderground[loc] > 0 and loc[2] -1 >= 0:
+            if NewUnderground[loc] > 0 and loc[2] - 1 >= 0:
                 OneUpUpdated = False
-                oneUp = (loc[0], loc[1], loc[2]-1)
+                oneUp = (loc[0], loc[1], loc[2] - 1)
                 if NewUnderground[oneUp] > -1:
                     tally = NewUnderground[loc]
-                #end
+                # end
 
                 if NewUnderground[oneUp] < 0 and OneUpUpdated == False:
                     if NewUnderground[oneUp] + NewUnderground[loc] < 0:
@@ -695,13 +707,12 @@ def search_bb_dig_plan(mine):
                     NewUnderground[oneUp] += NewUnderground[loc]
                     tally = NewUnderground[oneUp]
                     OneUpUpdated = True
-                #end
+                # end
 
-
-                for x in range(-1,2):
-                    for y in range(-1,2):
-                        if (x,y) != (0,0):
-                            tempLoc = (loc[0]-x,loc[1]-y, loc[2]-mine.dig_tolerance)
+                for x in range(-1, 2):
+                    for y in range(-1, 2):
+                        if (x, y) != (0, 0):
+                            tempLoc = (loc[0] - x, loc[1] - y, loc[2] - mine.dig_tolerance)
                             if mine.validCoords(tempLoc):
 
                                 if locTrack == loc[2]:
@@ -712,21 +723,16 @@ def search_bb_dig_plan(mine):
                                 tally = tally + NewUnderground[tempLoc]
                                 NewUnderground[tempLoc] = tally
 
-
-
-                            #end
-                        #end
-                    #end
-                #end
-
-
+                            # end
+                        # end
+                    # end
+                # end
 
                 if NewUnderground[oneUp] > -1 and OneUpUpdated == False:
-
                     NewUnderground[oneUp] = NewUnderground[oneUp] + tally
                     OneUpUpdated = True
 
-            #Checks for a reptead value in array
+            # Checks for a reptead value in array
             for i in range(0, len(location)):
                 for j in range(i + 1, len(location)):
                     if (location[i] == location[j]):
@@ -737,8 +743,8 @@ def search_bb_dig_plan(mine):
                 NewUnderground = NewUndergroundBackTrack.copy()
                 BackTrack = False
 
-            #end
-        #end
+            # end
+        # end
     except Exception as e:
         print(e)
         print("Yeet")
@@ -746,13 +752,9 @@ def search_bb_dig_plan(mine):
     # return
 
     # print(NewUnderground)
-    print(np.transpose(NewUnderground*100))
+    print(np.transpose(NewUnderground * 100))
 
     return getMax(mine, NewUnderground)
-
-
-
-
 
 
 def getMax(mine, newUnderground):
@@ -763,7 +765,7 @@ def getMax(mine, newUnderground):
 
     while len(outputPath) != newUnderground.size:
         validLocs = [l for l in mine.actions(state)]
-        sums = [newUnderground[(l[0],l[1], int(np.sum(state[l])))] for l in validLocs]
+        sums = [newUnderground[(l[0], l[1], int(np.sum(state[l])))] for l in validLocs]
 
         maxIndex = np.argmax(sums)
 
@@ -772,25 +774,26 @@ def getMax(mine, newUnderground):
         outputSum.append(mine.underground[maxLoc])
         outputPath.append(maxLoc)
         state = np.array(mine.result(state, maxLoc))
-    #end
+    # end
 
-    #Remove all negative values from end of list
-    for i in range(len(outputSum)-1, -1, -1):
+    # Remove all negative values from end of list
+    for i in range(len(outputSum) - 1, -1, -1):
         if outputSum[i] > 0:
-            del outputSum[i+1:]
-            del outputPath[i+1:]
+            del outputSum[i + 1:]
+            del outputPath[i + 1:]
             break
-        #end
-    #end
+        # end
+    # end
 
     fState = mine.results(mine.initial.copy(), outputPath)
 
     return sum(outputSum), find_action_sequence(mine.initial.copy(), fState), fState
 
-#end
+
+# end
 
 
-#Extra Function
+# Extra Function
 def find_action_sequence(s0, s1):
     '''
     Compute a sequence of actions to go from state s0 to state s1.
@@ -810,36 +813,38 @@ def find_action_sequence(s0, s1):
 
     flag = False
 
-    #Convert both states to numpy array.
+    # Convert both states to numpy array.
     s0 = np.array(s0)
     s1 = np.array(s1)
 
     outputActionList = []
 
-    #Convert 2D mines to 3D mines and set flag to convert back.
+    # Convert 2D mines to 3D mines and set flag to convert back.
     if s0.ndim == 2:
         s0 = np.expand_dims(s0, 1)
         s1 = np.expand_dims(s1, 1)
         flag = True
-    #end
+    # end
 
     while not np.array_equal(s0, s1):
-        #s0 < s1
-        x,y = np.where(np.sum(s0,2) < np.sum(s1,2))
-        locs = list(zip(x,y))
+        # s0 < s1
+        x, y = np.where(np.sum(s0, 2) < np.sum(s1, 2))
+        locs = list(zip(x, y))
 
-        #Get smallest s0[loc
-        vals = list(map(lambda loc: sum(s0[loc]),locs))
+        # Get smallest s0[loc
+        vals = list(map(lambda loc: sum(s0[loc]), locs))
 
         loc = locs[vals.index(min(vals))]
         loc = (loc[0], loc[1], int(sum(s0[loc])))
 
         outputActionList.append(loc)
         s0[loc] = 1
-    #end
+    # end
 
     return outputActionList
-#end
+
+
+# end
 
 
 def main():
@@ -874,7 +879,6 @@ def main():
 
     # search_bb_dig_plan(mine)
 
-
     #
     # s0 = [[1,0,0], [1,0,0], [0,0,0]]
     # s1 = [[1, 1, 1], [1, 1, 1], [1, 1, 1]]
@@ -885,14 +889,10 @@ def main():
 
     # print(find_action_sequence(s0,s1))
 
-#end
-        
+
+# end
+
 if __name__ == "__main__":
     main()
 
-#end
-        
-        
-    
-    
-    
+# end
